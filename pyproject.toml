@@ -1,0 +1,27 @@
+[project]
+name = "continuum-riot-core"
+version = "0.1.0"
+description = "Private Riot data spine for SoulRift + Runeterra (mini server authority node)."
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic-settings",
+    "sqlalchemy>=2.0",
+    "asyncpg",
+    "psycopg[binary]",
+    "alembic",
+    "httpx",
+    "structlog",
+    "python-json-logger",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

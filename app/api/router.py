@@ -1,0 +1,12 @@
+from __future__ import annotations
+
+from fastapi import APIRouter
+
+from app.api.v1.health import router as health_router
+from app.api.v1.version import router as version_router
+from app.api.v1.ddragon import router as ddragon_router
+
+router = APIRouter(prefix="/v1")
+router.include_router(health_router, tags=["health"])
+router.include_router(version_router, tags=["version"])
+router.include_router(ddragon_router, tags=["ddragon"])
