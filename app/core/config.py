@@ -1,17 +1,28 @@
 from __future__ import annotations
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    STATIC_ROOT: str = Field(
+        default="/var/lib/continuum/ddragon",
+        description="Root directory for DDragon static assets",
+    )
+
+    DEFAULT_LOCALE: str = Field(
+        default="en_US",
+        description="Primary locale for static ingestion",
+    )
 
     # Service
     ENV: str = "dev"
     SERVICE_NAME: str = "continuum-riot-core"
 
     # API
-    HOST: str = "127.0.0.1"
+    HOST: str = "192.168.0.74"
     PORT: int = 8000
 
     # Database
