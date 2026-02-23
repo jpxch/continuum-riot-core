@@ -10,7 +10,7 @@ from app.core.logging import configure_logging, new_request_id, set_request_id
 configure_logging(settings.SERVICE_NAME, settings.ENV)
 
 app = FastAPI(
-    titte=settings.SERVICE_NAME,
+    title=settings.SERVICE_NAME,
     version="0.1.0",
 )
 
