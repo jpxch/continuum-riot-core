@@ -19,3 +19,5 @@ alembic/versions/__pycache__/
 
 # Data
 data/ddragon/
+
+ROADMAP.md

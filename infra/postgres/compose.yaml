@@ -1,0 +1,26 @@
+---
+services:
+  postgres:
+    image: docker.io/library/postgres:16.2
+    container_name: riotcore-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: riotcore
+      POSTGRES_PASSWORD: Jorgiechan
+      POSTGRES_DB: riotcore
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - riotcore_pgdata:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U riotcore -d riotcore"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  riotcore_pgdata:

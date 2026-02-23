@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.models.base import Base
 
 from app.models.patch import PatchRegistry
+from app.models.asset import AssetRegistry
 
 
 config = context.config
