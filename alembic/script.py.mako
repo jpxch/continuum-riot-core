@@ -11,10 +11,10 @@ from alembic import op
 import sqlalchemy as sa
 ${imports if imports else ""}
 
-# revision indetifiers, used by Alembic.
+# revision indentifiers, used by Alembic.
 revision = ${repr(up_revision)}
 down_revision = ${repr(down_revision)}
-branch_lebels = ${repr(branch_labels)}
+branch_labels = ${repr(branch_labels)}
 depends_on = ${repr(depends_on)}
 
 

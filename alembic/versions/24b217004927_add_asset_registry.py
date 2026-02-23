@@ -1,7 +1,7 @@
 """add asset_registry
 
 Revision ID: 24b217004927
-Revises:
+Revises: a6673c90b13c
 Create Date: 2026-02-22 12:16:01.125795
 
 """
@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '24b217004927'
-down_revision = None
+down_revision = 'a6673c90b13c'
 branch_labels = None
 depends_on = None
 
