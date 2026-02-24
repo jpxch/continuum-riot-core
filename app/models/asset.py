@@ -53,7 +53,11 @@ class AssetRegistry(Base):
     )
 
     asset_type: Mapped[AssetType] = mapped_column(
-        SAEnum(AssetType, name="asset_type_enum"),
+        SAEnum(
+            AssetType,
+            name="asset_type_enum",
+            values_callable=lambda x: [e.value for e in x],
+        ),
         nullable=False,
     )
 
