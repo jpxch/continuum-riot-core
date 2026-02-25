@@ -21,13 +21,16 @@ Implemented today:
   - `GET /v1/items`
   - `GET /v1/runes`
   - `GET /v1/summoners`
+  - `GET /v1/modes`
+  - `GET /v1/modes/{mode_key}/manifest`
 
 ## What Is Not Finished Yet
 
 The service still needs core pieces before it can be treated as fully always-on production authority:
 - Automated periodic sync/poller (currently sync is request-triggered)
 - Full Riot player/match ingestion pipeline
-- Mode authority stabilization (`mode_registry` model/mapping cleanup + validation)
+- Mode bootstrap/discovery write workflow (mode tables are read-only today)
+- Live DB migration validation (`alembic upgrade head`) and offline SQL migration compatibility (`alembic upgrade head --sql`)
 - Contract and pagination/error policy hardening for downstream clients
 - Test suite and migration replay coverage
 - Operational hardening (monitoring, alerting, SLOs)
@@ -52,6 +55,13 @@ It is not the consumer app itself.
    - `alembic upgrade head`
 4. Start API:
    - `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+
+## Documentation
+
+- [docs/README.md](docs/README.md) - docs index
+- [docs/architecture.md](docs/architecture.md) - system architecture and data flow
+- [docs/api.md](docs/api.md) - API endpoint behavior and response shapes
+- [docs/development.md](docs/development.md) - local development, verification, and troubleshooting
 
 ## Source of Truth
 
