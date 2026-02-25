@@ -14,7 +14,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
 
@@ -39,7 +39,7 @@ class ModeRegistry(Base):
         Index("ix_mode_registry_family", "mode_family"),
     )
 
-    mode_key: Mapped[str] = mapped_column(String(32), pimary_key=True)
+    mode_key: Mapped[str] = mapped_column(String(32), primary_key=True)
 
     mode_family: Mapped[ModeFamily] = mapped_column(
         SAEnum(
@@ -72,6 +72,20 @@ class ModeRegistry(Base):
         server_default=func.now(),
     )
 
+    patch_statuses: Mapped[list[ModePatchRegistry]] = relationship(
+        "ModePatchRegistry",
+        back_populates="mode",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    queue_bindings: Mapped[list[ModeQueueBinding]] = relationship(
+        "ModeQueueBinding",
+        back_populates="mode",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
 class ModePatchRegistry(Base):
     __tablename__ = "mode_patch_registry"
 
@@ -87,7 +101,7 @@ class ModePatchRegistry(Base):
 
     patch: Mapped[str] = mapped_column(
         String(32),
-        ForeignKey("patch_registry.patch", ondelete="CASADE"),
+        ForeignKey("patch_registry.patch", ondelete="CASCADE"),
         primary_key=True,
     )
 
@@ -95,7 +109,7 @@ class ModePatchRegistry(Base):
         SAEnum(
             ModeStatus,
             name="mode_status_enum",
-            values_callable=lambda x: [e.value for e in x],
+            values_callable=lambda enum_cls: [e.value for e in enum_cls],
         ),
         nullable=False,
     )
@@ -108,6 +122,12 @@ class ModePatchRegistry(Base):
         server_default=func.now(),
     )
 
+    mode: Mapped[ModeRegistry] = relationship(
+        "ModeRegistry",
+        back_populates="patch_statuses",
+        passive_deletes=True,
+    )
+
 class ModeQueueBinding(Base):
     __tablename__ = "mode_queue_binding"
 
@@ -116,7 +136,7 @@ class ModeQueueBinding(Base):
         Index("ix_mode_queue_binding_mode_key", "mode_key"),
     )
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoinrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     mode_key: Mapped[str] = mapped_column(
         String(32),
@@ -127,3 +147,9 @@ class ModeQueueBinding(Base):
     queue_id: Mapped[int] = mapped_column(Integer, nullable=False)
 
     queue_description: Mapped[str | None] = mapped_column(String(256), nullable=True)
+
+    mode: Mapped[ModeRegistry] = relationship(
+        "ModeRegistry",
+        back_populates="queue_bindings",
+        passive_deletes=True,
+    )
