@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
+from app.api.response import success_response
 from app.models.asset import AssetType
 from app.services.static_read import (
     get_current_patch,
@@ -25,13 +26,18 @@ def error_response(code: str, message: str, status_code: int):
     )
 
 @router.get("/patch")
-async def read_patch(session: AsyncSession = Depends(get_db)):
+async def read_patch(
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+):
     patch = await get_current_patch(session)
     if not patch:
-        error_response(
-            "NO_CURRENT_PATCH",
-            "No current patch is registered.",
-            status.HTTP_404_NOT_FOUND,
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "NO_CURRENT_PATCH",
+                "message": "No current patch is registered.",
+            },
         )
 
     readiness = {}
@@ -42,11 +48,15 @@ async def read_patch(session: AsyncSession = Depends(get_db)):
             asset_type,
         )
 
-    return {
-        "currentPatch": patch,
-        "locale": settings.DEFAULT_LOCALE,
-        "assets": readiness,
-    }
+    return success_response(
+        request,
+        data={
+            "currentPatch": patch,
+            "locale": settings.DEFAULT_LOCALE,
+            "assets": readiness,
+        },
+        data_version=patch,
+    )
 
 @router.get("/champions")
 async def read_champions(session: AsyncSession = Depends(get_db)):

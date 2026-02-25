@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from app.api.router import router as v1_router
+from app.api.response import error_response
 from app.core.config import settings
 from app.core.logging import configure_logging, new_request_id, set_request_id
 
@@ -28,4 +29,11 @@ async def request_id_middleware(request: Request, call_next):
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
-    return JSONResponse(status_code=500, content={"error": "internal_error"})
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content=error_response(
+            request,
+            code="INTERNAL_ERROR",
+            message="An unexpected error occured.",
+        ),
+    )
