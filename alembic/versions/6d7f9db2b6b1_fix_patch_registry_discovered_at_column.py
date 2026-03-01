@@ -8,7 +8,6 @@ Create Date: 2026-02-23 00:00:00.000000
 from __future__ import annotations
 
 from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
@@ -18,17 +17,57 @@ branch_labels = None
 depends_on = None
 
 
-def _has_column(table_name: str, column_name: str) -> bool:
-    bind = op.get_bind()
-    inspector = sa.inspect(bind)
-    return any(col["name"] == column_name for col in inspector.get_columns(table_name))
-
-
 def upgrade() -> None:
-    if _has_column("patch_registry", "discover_at") and not _has_column("patch_registry", "discovered_at"):
-        op.alter_column("patch_registry", "discover_at", new_column_name="discovered_at")
+    op.execute(
+        """
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'patch_registry'
+          AND column_name = 'discover_at'
+    )
+    AND NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'patch_registry'
+          AND column_name = 'discovered_at'
+    )
+    THEN
+        ALTER TABLE public.patch_registry
+            RENAME COLUMN discover_at TO discovered_at;
+    END IF;
+END $$;
+"""
+    )
 
 
 def downgrade() -> None:
-    if _has_column("patch_registry", "discovered_at") and not _has_column("patch_registry", "discover_at"):
-        op.alter_column("patch_registry", "discovered_at", new_column_name="discover_at")
+    op.execute(
+        """
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'patch_registry'
+          AND column_name = 'discovered_at'
+    )
+    AND NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'patch_registry'
+          AND column_name = 'discover_at'
+    )
+    THEN
+        ALTER TABLE public.patch_registry
+            RENAME COLUMN discovered_at TO discover_at;
+    END IF;
+END $$;
+"""
+    )
