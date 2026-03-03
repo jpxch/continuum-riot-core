@@ -5,10 +5,11 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import String, Text, DateTime, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
+from app.core.types import JSONType
 
 
 class JobRunRegistry(Base):
@@ -55,7 +56,7 @@ class JobRunRegistry(Base):
 
     job_metadata: Mapped[Optional[dict]] = mapped_column(
         "metadata",
-        JSONB,
+        JSONType,
         nullable=True,
     )
 
