@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     SERVICE_NAME: str = "continuum-riot-core"
 
     # API
-    HOST: str = "192.168.0.74"
+    HOST: str = "127.0.0.1"
     PORT: int = 8000
 
     # Database

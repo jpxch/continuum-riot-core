@@ -18,11 +18,13 @@ def set_request_id(value: str | None) -> None:
 def get_request_id() -> str | None:
     return _request_id.get()
 
+
 def _add_request_id(logger, method_name, event_dict):
     rid = get_request_id()
     if rid:
         event_dict["request_id"] = rid
     return event_dict
+
 
 def configure_logging(service_name: str, env: str) -> None:
     # stdlib logging -> JSON

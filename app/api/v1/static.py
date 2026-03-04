@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import NoReturn
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,7 +17,7 @@ from app.core.config import settings
 
 router = APIRouter()
 
-def error_response(code: str, message: str, status_code: int):
+def error_response(code: str, message: str, status_code: int) -> NoReturn:
     raise HTTPException(
         status_code=status_code,
         detail={
@@ -76,7 +78,7 @@ async def read_summoners(session: AsyncSession = Depends(get_db)):
     except RuntimeError as e:
         handle_runtime_error(e)
 
-def handle_runtime_error(e: RuntimeError):
+def handle_runtime_error(e: RuntimeError) -> NoReturn:
     code = str(e)
     if code == "NO_CURRENT_PATCH":
         error_response(
