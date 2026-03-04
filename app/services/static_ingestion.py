@@ -1,11 +1,10 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Literal
 
 import httpx
-import logging
-logger = logging.getLogger(__name__)
 from sqlalchemy import select
 
 from app.core.config import settings
@@ -13,6 +12,8 @@ from app.core.paths import ddragon_asset_path, ddragon_locale_dir
 from app.db.session import AsyncSessionLocal
 from app.models.asset import AssetRegistry, AssetType
 from app.utils.hash import sha256_bytes, sha256_file
+
+logger = logging.getLogger(__name__)
 
 
 AssetStatus = Literal["new", "updated", "skipped", "failed"]
