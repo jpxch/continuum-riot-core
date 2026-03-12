@@ -11,28 +11,35 @@
 3. Start local Postgres:
    - `docker compose -f infra/postgres/compose.yaml up -d`
 4. Run migrations:
-   - `. .venv/bin/activate && alembic upgrade head`
+   - `.venv/bin/alembic upgrade head`
 5. Run API:
-   - `. .venv/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8000`
+   - `.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000`
 
 ## Useful Commands
 
 - Import check:
-  - `. .venv/bin/activate && python -c "import app.main"`
+  - `.venv/bin/python -c "import app.main"`
 - Compile check:
-  - `. .venv/bin/activate && python -m compileall -q app alembic`
+  - `.venv/bin/python -m compileall -q app alembic`
 - Alembic head:
-  - `. .venv/bin/activate && alembic heads`
+  - `.venv/bin/alembic heads`
 - Alembic history:
-  - `. .venv/bin/activate && alembic history`
+  - `.venv/bin/alembic history`
+- Alembic offline SQL:
+  - `.venv/bin/alembic upgrade head --sql`
 - Test run:
-  - `. .venv/bin/activate && pytest -q`
+  - `.venv/bin/pytest -q`
+- Targeted classifier test:
+  - `.venv/bin/pytest -q tests/test_mode_classifier.py`
+- Targeted mode tests:
+  - `.venv/bin/pytest -q tests/test_modes_read.py tests/test_mode_manifest.py`
 
-## Current Known Issues (2026-02-25)
+## Current Known Issues (2026-03-12)
 
-- `pytest -q` exits code 5 because no tests are discovered in configured `tests` path.
-- `alembic upgrade head --sql` fails due runtime schema inspection in migration `6d7f9db2b6b1`.
+- `tests/test_mode_classifier.py` passes, but `tests/test_modes_read.py` and `tests/test_mode_manifest.py` currently hang in timeout-based verification.
+- `alembic upgrade head --sql` now succeeds.
 - `alembic upgrade head` requires healthy local DB connectivity; if Postgres is unavailable or DSN is wrong it fails with `OperationalError`.
+- `continuum-mini` is reachable over SSH, but `curl http://127.0.0.1:8000/v1/health` currently fails with connection refusal.
 
 ## Troubleshooting
 
@@ -43,3 +50,4 @@
 - If endpoints return `NO_CURRENT_PATCH`, run:
   - `POST /v1/ddragon/sync`
 - If static endpoints return `ASSET_NOT_READY`, wait for background ingestion to finish and retry.
+- If the Mini target appears up but port `8000` is refusing connections, verify the actual process binding and the launched app module on `continuum-mini`.

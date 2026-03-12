@@ -4,6 +4,7 @@
 
 - Base prefix: `/v1`
 - Request correlation: `x-request-id` is accepted and echoed in responses.
+- Deployment target: `continuum-mini` (`192.168.0.74`)
 
 ## Response Shapes
 
@@ -37,7 +38,7 @@ Used by endpoints implemented through `success_response(...)`:
 {
   "error": {
     "code": "INTERNAL_ERROR",
-    "message": "An unexpected error occured.",
+    "message": "An unexpected error occurred.",
     "requestId": "uuid"
   }
 }
@@ -47,32 +48,33 @@ Used by endpoints implemented through `success_response(...)`:
 
 ### Health and Version
 
-- `GET /health`
+- `GET /v1/health`
   - `200`: service health envelope with `data.status = "ok"`.
 
-- `GET /version`
+- `GET /v1/version`
   - `200`: service info envelope with optional `meta.dataVersion` from current patch.
 
 ### Patch and Static Data
 
-- `POST /ddragon/sync`
+- `POST /v1/ddragon/sync`
   - `200`: schedules background ingestion for latest patch and returns:
     - `status`
     - `currentPatch`
     - `locale`
     - `ingestionScheduled`
+    - `modeAuthorityScheduled`
 
-- `GET /patch`
+- `GET /v1/patch`
   - `200`: envelope with:
     - `currentPatch`
     - `locale` (from `DEFAULT_LOCALE`)
     - `assets` readiness map
   - `404`: `NO_CURRENT_PATCH`
 
-- `GET /champions`
-- `GET /items`
-- `GET /runes`
-- `GET /summoners`
+- `GET /v1/champions`
+- `GET /v1/items`
+- `GET /v1/runes`
+- `GET /v1/summoners`
   - `200`: raw asset JSON payload
   - `404`: `NO_CURRENT_PATCH`
   - `409`: `ASSET_NOT_READY`
@@ -93,3 +95,8 @@ Used by endpoints implemented through `success_response(...)`:
 - Response envelopes are not fully standardized yet across every endpoint.
 - Some endpoints return raw JSON today; do not assume `meta` is always present.
 - Contract/pagination/deprecation policy is planned but not finalized.
+
+## Verification Notes
+
+- Verified locally on 2026-03-12: classifier tests pass, but mode API tests currently hang under `pytest`.
+- Verified on 2026-03-12: the Mini host is reachable over SSH, but the deployed service is not currently accepting HTTP connections on port `8000`.

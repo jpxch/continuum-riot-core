@@ -2,6 +2,8 @@
 
 `continuum-riot-core` is the backend data authority service for Riot-powered consumers (including your LoL companion app).
 
+Primary runtime target: `continuum-mini` (`192.168.0.74`).
+
 ## Current Direction
 
 This project is heading in the correct direction for an always-on server, but it is not fully there yet.
@@ -23,17 +25,24 @@ Implemented today:
   - `GET /v1/summoners`
   - `GET /v1/modes`
   - `GET /v1/modes/{mode_key}/manifest`
+- Mode bootstrap/discovery write workflow
+- Job-run tracking for background sync work
 
 ## What Is Not Finished Yet
 
 The service still needs core pieces before it can be treated as fully always-on production authority:
 - Automated periodic sync/poller (currently sync is request-triggered)
 - Full Riot player/match ingestion pipeline
-- Mode bootstrap/discovery write workflow (mode tables are read-only today)
-- Live DB migration validation (`alembic upgrade head`) and offline SQL migration compatibility (`alembic upgrade head --sql`)
+- Live DB migration validation (`alembic upgrade head`)
 - Contract and pagination/error policy hardening for downstream clients
 - Test suite and migration replay coverage
 - Operational hardening (monitoring, alerting, SLOs)
+
+Current verified blockers as of 2026-03-12:
+- `alembic upgrade head` still fails with DB connectivity (`psycopg.OperationalError: connection is bad`)
+- `tests/test_mode_classifier.py` passes, but `tests/test_modes_read.py` and `tests/test_mode_manifest.py` currently hang in local verification
+- `alembic upgrade head --sql` now succeeds
+- `continuum-mini` is reachable over SSH, but nothing is accepting HTTP connections on port `8000`
 
 ## Project Scope
 
@@ -52,9 +61,9 @@ It is not the consumer app itself.
 2. Start Postgres (optional local compose):
    - `docker compose -f infra/postgres/compose.yaml up -d`
 3. Run migrations:
-   - `alembic upgrade head`
+   - `.venv/bin/alembic upgrade head`
 4. Start API:
-   - `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+   - `.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000`
 
 ## Documentation
 

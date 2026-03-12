@@ -10,6 +10,8 @@
 
 This repository is not a consumer app UI.
 
+Primary runtime target is `continuum-mini` at `192.168.0.74`.
+
 ## Runtime Components
 
 - API framework: FastAPI (`app/main.py`, `app/api/*`)
@@ -24,15 +26,18 @@ This repository is not a consumer app UI.
 - `mode_registry`: canonical mode entries.
 - `mode_patch_registry`: mode state per patch (`ready`, `partial`, `failed`).
 - `mode_queue_binding`: queue-to-mode bindings.
+- `job_run_registry`: background job lifecycle and failure metadata.
 
 ## Request and Ingestion Flow
 
 1. `POST /v1/ddragon/sync` fetches latest patch from DDragon.
 2. The patch is persisted as current in `patch_registry`.
 3. A FastAPI background task downloads static JSON files.
-4. Files are written under `STATIC_ROOT/<patch>/<locale>/`.
-5. Metadata (sha256, file size, content type) is upserted into `asset_registry`.
-6. Read endpoints load from local files and validate readiness via DB metadata.
+4. The same background task schedules mode authority sync for the current patch.
+5. Files are written under `STATIC_ROOT/<patch>/<locale>/`.
+6. Metadata (sha256, file size, content type) is upserted into `asset_registry`.
+7. Job progress and failures are recorded in `job_run_registry`.
+8. Read endpoints load from local files and validate readiness via DB metadata.
 
 ## Read Flow
 
@@ -50,6 +55,7 @@ This repository is not a consumer app UI.
 ## Current Gaps
 
 - No autonomous scheduler/poller for patch ingestion.
-- No mode bootstrap/discovery writer yet (mode endpoints are read-only).
 - No player identity/match ingestion pipeline yet.
-- No running test suite in repository yet.
+- Live Postgres migration validation is still blocked by current DB connectivity issues.
+- Classifier tests run, but mode API tests currently hang in the dev harness.
+- Mini deployment is currently unhealthy: a `uvicorn` process exists, but port `8000` is refusing connections.
