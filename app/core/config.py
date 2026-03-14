@@ -34,4 +34,6 @@ class Settings(BaseSettings):
     DDDRAGON_BASE_URL: str = "https://ddragon.leagueoflegends.com"
     DDDRAGON_DATA_DIR: str = "./data/ddragon"
 
+    PATCH_POLL_INTERVAL_SECONDS: int = 3600
+
 settings = Settings()

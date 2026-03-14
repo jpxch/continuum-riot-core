@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+import asyncio
+import contextlib
+
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
@@ -7,12 +11,25 @@ from app.api.router import router as v1_router
 from app.api.response import error_response
 from app.core.config import settings
 from app.core.logging import configure_logging, new_request_id, set_request_id
+from app.services.patch_poller import start_patch_poller
 
 configure_logging(settings.SERVICE_NAME, settings.ENV)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    poller_task = await start_patch_poller()
+
+    try:
+        yield
+    finally:
+        poller_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await poller_task
 
 app = FastAPI(
     title=settings.SERVICE_NAME,
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 app.include_router(v1_router)
