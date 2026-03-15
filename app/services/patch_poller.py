@@ -18,7 +18,7 @@ async def get_current_patch(db) -> str | None:
     result = await db.execute(
         select(PatchRegistry.patch).where(PatchRegistry.is_current.is_(True))
     )
-    row = result.scaler_one_or_none()
+    row = result.scalar_one_or_none()
     return row
 
 async def poll_once() -> None:

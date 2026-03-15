@@ -12,6 +12,7 @@ Implemented today:
 - FastAPI service with versioned routes under `/v1`
 - Health/version endpoints
 - DDragon patch sync trigger: `POST /v1/ddragon/sync`
+- Patch poller baseline started from app lifespan
 - Static asset ingestion + persistence for:
   - champions
   - items
@@ -27,22 +28,23 @@ Implemented today:
   - `GET /v1/modes/{mode_key}/manifest`
 - Mode bootstrap/discovery write workflow
 - Job-run tracking for background sync work
+- Managed Mini deployment via `continuum-riot-core.service`
 
 ## What Is Not Finished Yet
 
 The service still needs core pieces before it can be treated as fully always-on production authority:
-- Automated periodic sync/poller (currently sync is request-triggered)
+- Stronger ingestion telemetry/observability around the current poller baseline
 - Full Riot player/match ingestion pipeline
 - Live DB migration validation (`alembic upgrade head`)
 - Contract and pagination/error policy hardening for downstream clients
 - Test suite and migration replay coverage
 - Operational hardening (monitoring, alerting, SLOs)
 
-Current verified blockers as of 2026-03-12:
+Current verified blockers as of 2026-03-15:
 - `alembic upgrade head` still fails with DB connectivity (`psycopg.OperationalError: connection is bad`)
 - `tests/test_mode_classifier.py` passes, but `tests/test_modes_read.py` and `tests/test_mode_manifest.py` currently hang in local verification
 - `alembic upgrade head --sql` now succeeds
-- `continuum-mini` is reachable over SSH, but nothing is accepting HTTP connections on port `8000`
+- `continuum-mini` now serves the API on `192.168.0.74:8000` under `continuum-riot-core.service`
 
 ## Project Scope
 
@@ -64,6 +66,13 @@ It is not the consumer app itself.
    - `.venv/bin/alembic upgrade head`
 4. Start API:
    - `.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000`
+
+## Mini Deployment
+
+- Managed runtime on `continuum-mini` uses a systemd unit: `continuum-riot-core.service`
+- Deployed app path on Mini: `/opt/continuum-riot-core`
+- Service env file on Mini: `/etc/continuum-riot-core.env`
+- Expected LAN endpoint: `http://192.168.0.74:8000`
 
 ## Documentation
 

@@ -34,12 +34,12 @@
 - Targeted mode tests:
   - `.venv/bin/pytest -q tests/test_modes_read.py tests/test_mode_manifest.py`
 
-## Current Known Issues (2026-03-12)
+## Current Known Issues (2026-03-15)
 
 - `tests/test_mode_classifier.py` passes, but `tests/test_modes_read.py` and `tests/test_mode_manifest.py` currently hang in timeout-based verification.
 - `alembic upgrade head --sql` now succeeds.
 - `alembic upgrade head` requires healthy local DB connectivity; if Postgres is unavailable or DSN is wrong it fails with `OperationalError`.
-- `continuum-mini` is reachable over SSH, but `curl http://127.0.0.1:8000/v1/health` currently fails with connection refusal.
+- `continuum-mini` now runs a managed systemd deployment at `/opt/continuum-riot-core`, but migration and branch-closure verification work is still pending.
 
 ## Troubleshooting
 
@@ -50,4 +50,8 @@
 - If endpoints return `NO_CURRENT_PATCH`, run:
   - `POST /v1/ddragon/sync`
 - If static endpoints return `ASSET_NOT_READY`, wait for background ingestion to finish and retry.
-- If the Mini target appears up but port `8000` is refusing connections, verify the actual process binding and the launched app module on `continuum-mini`.
+- Mini deployment checks:
+  - `systemctl status continuum-riot-core.service --no-pager -l`
+  - `journalctl -u continuum-riot-core.service -n 100 --no-pager`
+  - `curl http://127.0.0.1:8000/v1/health`
+  - `curl http://192.168.0.74:8000/v1/health`

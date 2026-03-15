@@ -32,12 +32,13 @@ Primary runtime target is `continuum-mini` at `192.168.0.74`.
 
 1. `POST /v1/ddragon/sync` fetches latest patch from DDragon.
 2. The patch is persisted as current in `patch_registry`.
-3. A FastAPI background task downloads static JSON files.
+3. A FastAPI background task downloads static JSON files for request-triggered sync.
 4. The same background task schedules mode authority sync for the current patch.
-5. Files are written under `STATIC_ROOT/<patch>/<locale>/`.
-6. Metadata (sha256, file size, content type) is upserted into `asset_registry`.
-7. Job progress and failures are recorded in `job_run_registry`.
-8. Read endpoints load from local files and validate readiness via DB metadata.
+5. A lifespan-started patch poller periodically checks DDragon for patch changes and can trigger the same ingest path automatically.
+6. Files are written under `STATIC_ROOT/<patch>/<locale>/`.
+7. Metadata (sha256, file size, content type) is upserted into `asset_registry`.
+8. Job progress and failures are recorded in `job_run_registry`.
+9. Read endpoints load from local files and validate readiness via DB metadata.
 
 ## Read Flow
 
@@ -54,8 +55,8 @@ Primary runtime target is `continuum-mini` at `192.168.0.74`.
 
 ## Current Gaps
 
-- No autonomous scheduler/poller for patch ingestion.
+- Patch poller baseline exists, but richer observability and lifecycle controls are still missing.
 - No player identity/match ingestion pipeline yet.
 - Live Postgres migration validation is still blocked by current DB connectivity issues.
 - Classifier tests run, but mode API tests currently hang in the dev harness.
-- Mini deployment is currently unhealthy: a `uvicorn` process exists, but port `8000` is refusing connections.
+- Mini deployment is currently healthy under `continuum-riot-core.service` and serves on port `8000`.
