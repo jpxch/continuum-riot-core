@@ -17,14 +17,18 @@ configure_logging(settings.SERVICE_NAME, settings.ENV)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    poller_task = await start_patch_poller()
+    poller_task = None
+
+    if settings.ENABLE_PATCH_POLLER:
+        poller_task = await start_patch_poller()
 
     try:
         yield
     finally:
-        poller_task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await poller_task
+        if poller_task:
+            poller_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await poller_task
 
 app = FastAPI(
     title=settings.SERVICE_NAME,

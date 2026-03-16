@@ -4,13 +4,11 @@ from app.models.patch import PatchRegistry
 from app.models.mode import ModeRegistry, ModeFamily
 
 
-@pytest.mark.asyncio
 async def test_modes_404_when_no_patch(client):
-    response = client.get("/v1/modes")
+    response = await client.get("/v1/modes")
     assert response.status_code == 404
     assert response.json()["detail"]["code"] == "NO_CURRENT_PATCH"
 
-@pytest.mark.asyncio
 async def test_modes_list_success(client, db_session):
     db_session.add(PatchRegistry(patch="1.0.0", is_current=True))
 
@@ -25,7 +23,7 @@ async def test_modes_list_success(client, db_session):
 
     await db_session.commit()
 
-    response = client.get("/v1/modes")
+    response = await client.get("/v1/modes")
     assert response.status_code == 200
 
     body = response.json()

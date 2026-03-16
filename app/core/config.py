@@ -36,4 +36,6 @@ class Settings(BaseSettings):
 
     PATCH_POLL_INTERVAL_SECONDS: int = 3600
 
+    ENABLE_PATCH_POLLER: bool = True
+
 settings = Settings()
