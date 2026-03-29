@@ -59,30 +59,46 @@ async def read_patch(
     )
 
 @router.get("/champions")
-async def read_champions(session: AsyncSession = Depends(get_db)):
+async def read_champions(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
     try:
-        return await load_asset_json(session, AssetType.CHAMPION)
+        data = await load_asset_json(session, AssetType.CHAMPION)
+        return success_response(request, data=data)
     except RuntimeError as e:
         handle_runtime_error(e)
 
 @router.get("/items")
-async def read_items(session: AsyncSession = Depends(get_db)):
+async def read_items(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
     try:
-        return await load_asset_json(session, AssetType.ITEM)
+        data = await load_asset_json(session, AssetType.ITEM)
+        return success_response(request, data=data)
     except RuntimeError as e:
         handle_runtime_error(e)
 
 @router.get("/runes")
-async def read_runes(session: AsyncSession = Depends(get_db)):
+async def read_runes(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
     try:
-        return await load_asset_json(session, AssetType.RUNE)
+        data = await load_asset_json(session, AssetType.RUNE)
+        return success_response(request, data=data)
     except RuntimeError as e:
         handle_runtime_error(e)
 
 @router.get("/summoners")
-async def read_summoners(session: AsyncSession = Depends(get_db)):
+async def read_summoners(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
     try:
-        return await load_asset_json(session, AssetType.SUMMONER)
+        data = await load_asset_json(session, AssetType.SUMMONER)
+        return success_response(request, data=data)
     except RuntimeError as e:
         handle_runtime_error(e)
 

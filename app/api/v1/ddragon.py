@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, BackgroundTasks, Query
+from fastapi import APIRouter, Depends, BackgroundTasks, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.response import seccess_response
 from app.core.config import settings
 from app.db.session import get_db, AsyncSessionLocal
 from app.services.ddragon import fetch_latest_patch, set_current_patch
@@ -40,6 +41,7 @@ async def run_ddragon_sync_job(patch: str, locale: str):
 
 @router.post("/ddragon/sync")
 async def ddragon_sync(
+    request: Request,
     background_tasks: BackgroundTasks,
     locale: str = Query(default=settings.DEFAULT_LOCALE),
     db: AsyncSession = Depends(get_db),
@@ -53,10 +55,13 @@ async def ddragon_sync(
         locale=locale,
     )
 
-    return {
-        "status": "ok",
-        "currentPatch": info.latest,
-        "locale": locale,
-        "ingestionScheduled": True,
-        "modeAuthorityScheduled": True,
-    }
+    return seccess_response(
+        request,
+        data={
+            "currentPatch": info.latest,
+            "locale": locale,
+            "ingestionSchedules": True,
+            "modeAuthoritySchedules": True,
+        },
+        data_version=info.latest,
+    )

@@ -13,6 +13,7 @@ def success_response(
     data_version: str | None = None,
 ) -> dict:
     return {
+        "status": "success",
         "data": data,
         "meta": {
             "requestId": get_request_id(),
@@ -28,9 +29,10 @@ def error_response(
     message: str,
 ) -> dict:
     return {
+        "status": "error",
         "error": {
             "code": code,
             "message": message,
             "requestId": get_request_id(),
-        }
+        },
     }
