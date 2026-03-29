@@ -41,12 +41,12 @@ The service still needs core pieces before it can be treated as fully always-on 
 - Operational hardening (monitoring, alerting, SLOs)
 
 Current verified blockers as of 2026-03-29:
-- `continuum-mini` was directly re-verified on 2026-03-29: `continuum-riot-core.service` is active and `GET /v1/health` returns `data.status = "ok"` on port `8000`
-- The shared HTTP retry logging fix is committed on the branch (`f04f954`)
-- `app/services/static_ingestion.py` now uses positional log arguments on the ingestion path, so the remaining closure work has shifted from code cleanup to verification
-- `pytest` could not be re-run in this sandbox because Python could not find a usable temp directory (`FileNotFoundError` for `/tmp`, `/var/tmp`, `/usr/tmp`, and the repo root)
-- `tests/test_modes_read.py` and `tests/test_mode_manifest.py` remain unresolved until they are re-run in a normal writable dev environment
-- Live DB migration validation (`alembic upgrade head`) is still open until it is re-run against healthy Postgres
+- `continuum-mini` was directly re-verified on 2026-03-29: `continuum-riot-core.service` is active and host-local `GET /v1/health` plus `GET /v1/version` return `200` on port `8000`
+- The `ddragon` response-helper typo is fixed and Mini host import verification succeeds with `/opt/continuum-riot-core/.venv/bin/python -c "import app.main"`
+- `pytest` is green in the Mini workspace on 2026-03-29: `11 passed, 1 warning in 0.24s`
+- `alembic upgrade head` is green on `continuum-mini` on 2026-03-29 and completes without error against Postgres
+- `POST /v1/ddragon/sync` smoke verification is green on `continuum-mini`: it returns the success envelope, reports patch `16.6.1`, and is followed by a `Mode authority sync complete` log entry
+- The main remaining runtime/documentation gaps are richer ingestion telemetry and consumer contract hardening
 
 ## Project Scope
 

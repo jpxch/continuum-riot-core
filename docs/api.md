@@ -14,6 +14,7 @@ Used by endpoints implemented through `success_response(...)`:
 
 ```json
 {
+  "status": "success",
   "data": {},
   "meta": {
     "requestId": "uuid",
@@ -24,10 +25,10 @@ Used by endpoints implemented through `success_response(...)`:
 }
 ```
 
-### Raw success responses
+### Current success behavior
 
-- `POST /v1/ddragon/sync` returns a direct JSON object.
-- Static asset endpoints (`/champions`, `/items`, `/runes`, `/summoners`) return raw Data Dragon JSON.
+- `POST /v1/ddragon/sync` uses the shared `success_response(...)` envelope.
+- Static asset endpoints (`/champions`, `/items`, `/runes`, `/summoners`) also currently return through `success_response(...)`, with the raw Data Dragon payload nested inside `data`.
 
 ### Error responses
 
@@ -36,6 +37,7 @@ Used by endpoints implemented through `success_response(...)`:
 
 ```json
 {
+  "status": "error",
   "error": {
     "code": "INTERNAL_ERROR",
     "message": "An unexpected error occurred.",
@@ -59,10 +61,11 @@ Used by endpoints implemented through `success_response(...)`:
 - `POST /v1/ddragon/sync`
   - `200`: schedules background ingestion for latest patch and returns:
     - `status`
-    - `currentPatch`
-    - `locale`
-    - `ingestionScheduled`
-    - `modeAuthorityScheduled`
+    - `data.currentPatch`
+    - `data.locale`
+    - `data.ingestionSchedules`
+    - `data.modeAuthoritySchedules`
+    - `meta.dataVersion`
 
 - `GET /v1/patch`
   - `200`: envelope with:
@@ -92,12 +95,19 @@ Used by endpoints implemented through `success_response(...)`:
 
 ## Notes for Consumers
 
-- Response envelopes are not fully standardized yet across every endpoint.
-- Some endpoints return raw JSON today; do not assume `meta` is always present.
+- Response envelopes are closer to standardization now, but route-level `HTTPException` responses still differ from the global unhandled-error format.
+- The current code-level success helper includes top-level `status`, `data`, and `meta`.
 - Contract/pagination/deprecation policy is planned but not finalized.
 
 ## Verification Notes
 
-- Verified on 2026-03-29: `continuum-mini` reports `continuum-riot-core.service` as active and `GET /v1/health` returns a success envelope on port `8000`.
+- Verified on 2026-03-29: `continuum-mini` reports `continuum-riot-core.service` as active.
+- Verified on 2026-03-29 from the Mini host itself:
+  - `GET http://127.0.0.1:8000/v1/health` returns `200`
+  - `GET http://127.0.0.1:8000/v1/version` returns `200` with `dataVersion: "16.6.1"`
+- Verified on 2026-03-29 from the Mini host itself:
+  - `POST http://127.0.0.1:8000/v1/ddragon/sync` returns `200`
+  - The observed response body uses the shared success envelope with `status: "success"`, `data.currentPatch: "16.6.1"`, `data.locale: "en_US"`, `data.ingestionSchedules: true`, and `data.modeAuthoritySchedules: true`
+  - Service logs record `Mode authority sync complete` for patch `16.6.1`
 - Verified on 2026-03-29: route wiring still exposes mode endpoints under the `/v1` API prefix.
-- `pytest` was not re-run successfully in this sandbox because Python could not find a usable temporary directory; test verification still needs a normal writable dev environment.
+- Verified on 2026-03-29 in the Mini workspace: `pytest` reports `11 passed, 1 warning in 0.24s`.

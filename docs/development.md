@@ -37,10 +37,12 @@
 ## Current Known Issues (2026-03-29)
 
 - `app/services/static_ingestion.py` now uses positional log arguments on the ingestion path; the remaining branch-closure work is verification rather than this specific code cleanup.
-- `tests/test_modes_read.py` and `tests/test_mode_manifest.py` remain unresolved until they are re-run in a normal writable dev environment.
-- `pytest` could not be re-run from this sandbox because Python could not find a usable temporary directory (`FileNotFoundError` for `/tmp`, `/var/tmp`, `/usr/tmp`, and the repo root).
-- `alembic upgrade head --sql` succeeded historically, but `alembic upgrade head` still needs fresh validation against healthy Postgres.
-- `continuum-mini` was directly re-verified on 2026-03-29: `continuum-riot-core.service` is active and `GET /v1/health` succeeds on port `8000`.
+- The Mini workspace test baseline is green again: `pytest` reports `11 passed, 1 warning in 0.24s` on 2026-03-29.
+- The `ddragon` response-helper typo is fixed, and Mini host import verification succeeds with `/opt/continuum-riot-core/.venv/bin/python -c "import app.main"`.
+- `alembic upgrade head` is recorded as successful on `continuum-mini` on 2026-03-29 and completes without error against Postgres.
+- `continuum-mini` was directly re-verified on 2026-03-29: `continuum-riot-core.service` is active and host-local `GET /v1/health` plus `GET /v1/version` succeed on port `8000`.
+- `POST /v1/ddragon/sync` smoke verification is now recorded on `continuum-mini`: it returns `200` and service logs show `Mode authority sync complete` for patch `16.6.1`.
+- The remaining follow-up is stronger ingestion telemetry and consumer contract hardening.
 
 ## Troubleshooting
 
@@ -55,4 +57,5 @@
   - `systemctl status continuum-riot-core.service --no-pager -l`
   - `journalctl -u continuum-riot-core.service -n 100 --no-pager`
   - `curl http://127.0.0.1:8000/v1/health`
+  - `curl http://127.0.0.1:8000/v1/version`
   - `curl http://192.168.0.74:8000/v1/health`
