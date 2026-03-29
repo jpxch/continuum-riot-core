@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
+from app.services.http_client import fetch_json
 
-import httpx
 
 QUEUE_CATALOG_URL = "https://static.developer.riotgames.com/docs/lol/queues.json"
 
@@ -33,16 +33,15 @@ def _normalize_item(raw: dict[str, Any]) -> QueueCatalogItem:
     )
 
 async def fetch_queue_catalog() -> list[QueueCatalogItem]:
-    async with httpx.AsyncClient(timeout=20.0) as client:
-        r = await client.get(QUEUE_CATALOG_URL)
-        r.raise_for_status()
-        payload = r.json()
+    payload = await fetch_json(QUEUE_CATALOG_URL)
 
     if not isinstance(payload, list):
         raise RuntimeError("Unexpected queues.json payload (expected list)")
 
     out: list[QueueCatalogItem] = []
+
     for item in payload:
         if isinstance(item, dict):
             out.append(_normalize_item(item))
+
     return out

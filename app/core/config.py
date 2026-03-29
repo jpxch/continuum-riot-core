@@ -38,4 +38,8 @@ class Settings(BaseSettings):
 
     ENABLE_PATCH_POLLER: bool = True
 
+    HTTP_TIMEOUT_SECONDS: float = 20.0
+    HTTP_MAX_RETRIES: int = 3
+    HTTP_RETRY_BACKOFF_SECONDS: float = 0.5
+
 settings = Settings()

@@ -82,11 +82,11 @@ Used by endpoints implemented through `success_response(...)`:
 
 ### Modes
 
-- `GET /modes`
+- `GET /v1/modes`
   - `200`: envelope with mode list for current patch
   - `404`: `NO_CURRENT_PATCH`
 
-- `GET /modes/{mode_key}/manifest`
+- `GET /v1/modes/{mode_key}/manifest`
   - `200`: envelope with mode manifest for current patch
   - `404`: `NO_CURRENT_PATCH` or `MODE_NOT_FOUND`
 
@@ -98,5 +98,6 @@ Used by endpoints implemented through `success_response(...)`:
 
 ## Verification Notes
 
-- Verified locally on 2026-03-12: classifier tests pass, but mode API tests currently hang under `pytest`.
-- Verified on 2026-03-12: the Mini host is reachable over SSH, but the deployed service is not currently accepting HTTP connections on port `8000`.
+- Verified on 2026-03-29: `continuum-mini` reports `continuum-riot-core.service` as active and `GET /v1/health` returns a success envelope on port `8000`.
+- Verified on 2026-03-29: route wiring still exposes mode endpoints under the `/v1` API prefix.
+- `pytest` was not re-run successfully in this sandbox because Python could not find a usable temporary directory; test verification still needs a normal writable dev environment.

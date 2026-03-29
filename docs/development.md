@@ -34,12 +34,13 @@
 - Targeted mode tests:
   - `.venv/bin/pytest -q tests/test_modes_read.py tests/test_mode_manifest.py`
 
-## Current Known Issues (2026-03-15)
+## Current Known Issues (2026-03-29)
 
-- `tests/test_mode_classifier.py` passes, but `tests/test_modes_read.py` and `tests/test_mode_manifest.py` currently hang in timeout-based verification.
-- `alembic upgrade head --sql` now succeeds.
-- `alembic upgrade head` requires healthy local DB connectivity; if Postgres is unavailable or DSN is wrong it fails with `OperationalError`.
-- `continuum-mini` now runs a managed systemd deployment at `/opt/continuum-riot-core`, but migration and branch-closure verification work is still pending.
+- `app/services/static_ingestion.py` now uses positional log arguments on the ingestion path; the remaining branch-closure work is verification rather than this specific code cleanup.
+- `tests/test_modes_read.py` and `tests/test_mode_manifest.py` remain unresolved until they are re-run in a normal writable dev environment.
+- `pytest` could not be re-run from this sandbox because Python could not find a usable temporary directory (`FileNotFoundError` for `/tmp`, `/var/tmp`, `/usr/tmp`, and the repo root).
+- `alembic upgrade head --sql` succeeded historically, but `alembic upgrade head` still needs fresh validation against healthy Postgres.
+- `continuum-mini` was directly re-verified on 2026-03-29: `continuum-riot-core.service` is active and `GET /v1/health` succeeds on port `8000`.
 
 ## Troubleshooting
 

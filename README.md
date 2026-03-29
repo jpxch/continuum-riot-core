@@ -40,11 +40,13 @@ The service still needs core pieces before it can be treated as fully always-on 
 - Test suite and migration replay coverage
 - Operational hardening (monitoring, alerting, SLOs)
 
-Current verified blockers as of 2026-03-15:
-- `alembic upgrade head` still fails with DB connectivity (`psycopg.OperationalError: connection is bad`)
-- `tests/test_mode_classifier.py` passes, but `tests/test_modes_read.py` and `tests/test_mode_manifest.py` currently hang in local verification
-- `alembic upgrade head --sql` now succeeds
-- `continuum-mini` now serves the API on `192.168.0.74:8000` under `continuum-riot-core.service`
+Current verified blockers as of 2026-03-29:
+- `continuum-mini` was directly re-verified on 2026-03-29: `continuum-riot-core.service` is active and `GET /v1/health` returns `data.status = "ok"` on port `8000`
+- The shared HTTP retry logging fix is committed on the branch (`f04f954`)
+- `app/services/static_ingestion.py` now uses positional log arguments on the ingestion path, so the remaining closure work has shifted from code cleanup to verification
+- `pytest` could not be re-run in this sandbox because Python could not find a usable temp directory (`FileNotFoundError` for `/tmp`, `/var/tmp`, `/usr/tmp`, and the repo root)
+- `tests/test_modes_read.py` and `tests/test_mode_manifest.py` remain unresolved until they are re-run in a normal writable dev environment
+- Live DB migration validation (`alembic upgrade head`) is still open until it is re-run against healthy Postgres
 
 ## Project Scope
 

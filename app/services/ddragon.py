@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import httpx
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.models.patch import PatchRegistry
+from app.services.http_client import fetch_json
 
 
 @dataclass(frozen=True)
@@ -17,10 +17,8 @@ class DDragonVersionInfo:
 
 async def fetch_latest_patch() -> DDragonVersionInfo:
     url = f"{settings.DDDRAGON_BASE_URL}/api/versions.json"
-    async with httpx.AsyncClient(timeout=20.0) as client:
-        r = await client.get(url)
-        r.raise_for_status()
-        versions = r.json()
+
+    versions = await fetch_json(url)
 
     if not versions or not isinstance(versions, list):
         raise RuntimeError("Unexpected DDragon versions payload")

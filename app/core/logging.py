@@ -24,6 +24,13 @@ def _add_request_id(logger, method_name, event_dict):
         event_dict["request_id"] = rid
     return event_dict
 
+
+def _configure_library_log_levels() -> None:
+    # Keep low-level transport chatter out of service logs.
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+
+
 def configure_logging(service_name: str, env: str) -> None:
     # stdlib logging -> JSON
     handler = logging.StreamHandler(sys.stdout)
@@ -34,6 +41,7 @@ def configure_logging(service_name: str, env: str) -> None:
     root.handlers.clear()
     root.addHandler(handler)
     root.setLevel(logging.INFO if env != "dev" else logging.DEBUG)
+    _configure_library_log_levels()
 
     structlog.configure(
         processors=[
