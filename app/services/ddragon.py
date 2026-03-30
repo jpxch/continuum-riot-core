@@ -16,7 +16,7 @@ class DDragonVersionInfo:
 
 
 async def fetch_latest_patch() -> DDragonVersionInfo:
-    url = f"{settings.DDDRAGON_BASE_URL}/api/versions.json"
+    url = f"{settings.DDRAGON_BASE_URL}/api/versions.json"
 
     versions = await fetch_json(url)
 

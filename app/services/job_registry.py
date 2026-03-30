@@ -87,7 +87,7 @@ async def complete_job_failure(
     duration_ms = int((now - job.started_at).total_seconds() * 1000)
 
     final_metadata = job.job_metadata or {}
-    final_metadata["during_ms"] = duration_ms
+    final_metadata["duration_ms"] = duration_ms
 
     await session.execute(
         update(JobRunRegistry)

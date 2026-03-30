@@ -24,6 +24,7 @@ async def get_current_patch(db) -> str | None:
         select(PatchRegistry.patch).where(PatchRegistry.is_current.is_(True))
     )
     row = result.scalar_one_or_none()
+    return row
 
 async def poll_once() -> None:
     latest = await fetch_latest_patch()

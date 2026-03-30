@@ -31,8 +31,8 @@ class Settings(BaseSettings):
 
     # Riot + DDragon
     RIOT_API_KEY: str
-    DDDRAGON_BASE_URL: str = "https://ddragon.leagueoflegends.com"
-    DDDRAGON_DATA_DIR: str = "./data/ddragon"
+    DDRAGON_BASE_URL: str = "https://ddragon.leagueoflegends.com"
+    DDRAGON_DATA_DIR: str = "./data/ddragon"
 
     PATCH_POLL_INTERVAL_SECONDS: int = 3600
 

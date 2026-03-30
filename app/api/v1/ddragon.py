@@ -11,23 +11,26 @@ from app.services.job_registry import (
     start_job,
     complete_job_success,
     complete_job_failure,
+    JobAlreadyRunningError,
 )
 
 router = APIRouter()
 
 async def run_ddragon_sync_job(patch: str, locale: str):
     async with AsyncSessionLocal() as session:
-
-        job = await start_job(
-            session,
-            job_type="ddragon_sync",
-            job_key=patch,
-            metadata={
-                "patch": patch,
-                "locale": locale,
-            },
-        )
-        await session.commit()
+        try:
+            job = await start_job(
+                session,
+                job_type="ddragon_sync",
+                job_key=patch,
+                metadata={
+                    "patch": patch,
+                    "locale": locale,
+                },
+            )
+            await session.commit()
+        except JobAlreadyRunningError:
+            return
 
         try:
             results = await ingest_patch_static_data(
@@ -57,7 +60,8 @@ async def run_ddragon_sync_job(patch: str, locale: str):
                 str(e)
             )
             await session.commit()
-            raise
+
+            return
 
 
 @router.post("/ddragon/sync")
