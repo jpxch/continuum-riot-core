@@ -1,3 +1,0 @@
-{"asctime": "2026-03-29 13:47:03,424", "levelname": "DEBUG", "name": "asyncio", "message": "Using selector: EpollSelector"}
-{"asctime": "2026-03-29 13:47:03,777", "levelname": "DEBUG", "name": "aiosqlite", "message": "executing <function connect.<locals>.connector at 0x74f46a852820>"}
-{"asctime": "2026-03-29 13:47:03,785", "levelname": "DEBUG", "name": "aiosqlite", "message": "operation <function connect.<locals>.connector at 0x74f46a852820> completed"}

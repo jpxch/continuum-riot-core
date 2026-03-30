@@ -5,7 +5,7 @@ from app.api.response import success_response
 from app.core.config import settings
 from app.db.session import get_db, AsyncSessionLocal
 from app.services.ddragon import fetch_latest_patch, set_current_patch
-from app.services.static_ingestion import ingest_patch_static_data
+from app.services.static_ingestion import ingest_patch_static_data, summarize_results
 from app.services.mode_authority import sync_modes_for_patch
 from app.services.job_registry import (
     start_job,
@@ -22,19 +22,40 @@ async def run_ddragon_sync_job(patch: str, locale: str):
             session,
             job_type="ddragon_sync",
             job_key=patch,
-            metadata={"locale": locale},
+            metadata={
+                "patch": patch,
+                "locale": locale,
+            },
         )
         await session.commit()
 
         try:
-            await ingest_patch_static_data(patch=patch, locale=locale)
+            results = await ingest_patch_static_data(
+                patch=patch,
+                locale=locale
+            )
+
             await sync_modes_for_patch(patch=patch)
 
-            await complete_job_success(session, job.id)
+            summary = summarize_results(results)
+
+            await complete_job_success(
+                session,
+                job.id,
+                metadata={
+                    "patch": patch,
+                    "locale": locale,
+                    "assets": summary,
+                },
+            )
             await session.commit()
 
         except Exception as e:
-            await complete_job_failure(session, job.id, str(e))
+            await complete_job_failure(
+                session,
+                job.id,
+                str(e)
+            )
             await session.commit()
             raise
 

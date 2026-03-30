@@ -32,7 +32,7 @@ STATIC_FILES: dict[AssetType, str] = {
 }
 
 def _static_url(*, patch: str, locale: str, filename: str) -> str:
-    return f"{settings.DDDRAGON_BASE_URL}/cdn/{patch}/data/{locale}/{filename}"
+    return f"{settings.DDRAGON_BASE_URL}/cdn/{patch}/data/{locale}/{filename}"
 
 async def ingest_patch_static_data(*, patch: str, locale: str) -> list[AssetResult]:
     results: list[AssetResult] = []
@@ -153,3 +153,17 @@ async def ingest_patch_static_data(*, patch: str, locale: str) -> list[AssetResu
         )
 
     return results
+
+def summarize_results(results: list[AssetResult]) -> dict:
+    summary: {
+        "total": len(results),
+        "new": 0,
+        "updated": 0,
+        "skipped": 0,
+        "failed": 0,
+    }
+
+    for r in results:
+        summary[r.status] += 1
+
+    return summary
