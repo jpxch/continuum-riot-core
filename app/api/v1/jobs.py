@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, func
 
 from app.api.response import success_response
 from app.db.session import get_db
@@ -14,11 +14,18 @@ router = APIRouter()
 async def get_recent_jobs(
     request: Request,
     limit: int = 10,
+    offset: int = 0,
     db: AsyncSession = Depends(get_db),
 ):
+    total_result = await db.execute(
+        select(func.count()).select_from(JobRunRegistry)
+    )
+    total = total_result.scalar_one()
+
     result = await db.execute(
         select(JobRunRegistry)
         .order_by(desc(JobRunRegistry.created_at))
+        .offset(offset)
         .limit(limit)
     )
 
@@ -43,6 +50,11 @@ async def get_recent_jobs(
     return success_response(
         request,
         data=data,
+        meta={
+            "limit": limit,
+            "offset": offset,
+            "total": total,
+        }
     )
 
 @router.get("/jobs/latest")
