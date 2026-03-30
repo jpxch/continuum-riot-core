@@ -30,6 +30,7 @@ async def get_recent_jobs(
         metadata = job.job_metadata or {}
 
         data.append({
+            "id": str(job.id),
             "job_type": job.job_type,
             "status": job.status,
             "patch": metadata.get("patch"),
