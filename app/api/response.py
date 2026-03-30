@@ -11,16 +11,21 @@ def success_response(
     request: Request,
     data: Any,
     data_version: str | None = None,
+    meta: dict[str, Any] | None = None,
 ) -> dict:
+    response_meta = {
+        "requestId": get_request_id(),
+        "apiVersion": "v1",
+        "dataVersion": data_version,
+        "generatedAt": datetime.now(timezone.utc).isoformat(),
+    }
+    if meta:
+        response_meta.update(meta)
+
     return {
         "status": "success",
         "data": data,
-        "meta": {
-            "requestId": get_request_id(),
-            "apiVersion": "v1",
-            "dataVersion": data_version,
-            "generatedAt": datetime.now(timezone.utc).isoformat(),
-        },
+        "meta": response_meta,
     }
 
 def error_response(
