@@ -81,3 +81,43 @@ async def get_job_by_id(
             "metadata": metadata,
         }
     )
+
+@router.get("/jobs/latest")
+async def get_latest_job(
+    request: Request,
+    job_type: str,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(JobRunRegistry)
+        .where(JobRunRegistry.job_type == job_type)
+        .order_by(desc(JobRunRegistry.created_at))
+        .limit(1)
+    )
+
+    job = result.scalar_one_or_none()
+
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    metadata = job.job_metadata or {}
+
+    return success_response(
+        request,
+        data={
+            "id": str(job.id),
+            "job_type": job.job_type,
+            "job_key": job.job_key,
+            "status": job.status,
+            "error": job.error_message,
+            "started_at": job.started_at,
+            "finished_at": job.finished_at,
+
+            "patch": metadata.get("patch"),
+            "locale": metadata.get("locale"),
+            "duration_ms": metadata.get("duration_ms"),
+            "assets": metadata.get("assets"),
+
+            "metadata": metadata,
+        }
+    )
