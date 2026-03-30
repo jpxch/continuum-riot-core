@@ -79,9 +79,4 @@ async def get_job_by_id(
 
             "metadata": metadata,
         }
-
-        return success_response(
-            request,
-            data=data,
-        )
     )
