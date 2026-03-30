@@ -45,43 +45,6 @@ async def get_recent_jobs(
         data=data,
     )
 
-@router.get("/jobs/{job_id}")
-async def get_job_by_id(
-    job_id: UUID,
-    request: Request,
-    db: AsyncSession = Depends(get_db),
-):
-    result = await db.execute(
-        select(JobRunRegistry).where(JobRunRegistry.id == job_id)
-    )
-
-    job = result.scalar_one_or_none()
-
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-
-    metadata = job.job_metadata or {}
-
-    return success_response(
-        request,
-        data={
-            "id": str(job.id),
-            "job_type": job.job_type,
-            "job_key": job.job_key,
-            "status": job.status,
-            "error": job.error_message,
-            "started_at": job.started_at,
-            "finished_at": job.finished_at,
-
-            "patch": metadata.get("patch"),
-            "locale": metadata.get("locale"),
-            "duration_ms": metadata.get("duration_ms"),
-            "assets": metadata.get("assets"),
-
-            "metadata": metadata,
-        }
-    )
-
 @router.get("/jobs/latest")
 async def get_latest_job(
     request: Request,
@@ -121,3 +84,42 @@ async def get_latest_job(
             "metadata": metadata,
         }
     )
+
+
+@router.get("/jobs/{job_id}")
+async def get_job_by_id(
+    job_id: UUID,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(JobRunRegistry).where(JobRunRegistry.id == job_id)
+    )
+
+    job = result.scalar_one_or_none()
+
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    metadata = job.job_metadata or {}
+
+    return success_response(
+        request,
+        data={
+            "id": str(job.id),
+            "job_type": job.job_type,
+            "job_key": job.job_key,
+            "status": job.status,
+            "error": job.error_message,
+            "started_at": job.started_at,
+            "finished_at": job.finished_at,
+
+            "patch": metadata.get("patch"),
+            "locale": metadata.get("locale"),
+            "duration_ms": metadata.get("duration_ms"),
+            "assets": metadata.get("assets"),
+
+            "metadata": metadata,
+        }
+    )
+
