@@ -155,7 +155,7 @@ async def ingest_patch_static_data(*, patch: str, locale: str) -> list[AssetResu
     return results
 
 def summarize_results(results: list[AssetResult]) -> dict:
-    summary: {
+    summary = {
         "total": len(results),
         "new": 0,
         "updated": 0,
