@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
 from uuid import UUID
+from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, func
 
@@ -15,20 +16,37 @@ async def get_recent_jobs(
     request: Request,
     limit: int = 10,
     offset: int = 0,
+    job_type: Optional[str] = None,
+    status: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
 ):
-    total_result = await db.execute(
-        select(func.count()).select_from(JobRunRegistry)
-    )
+    query = select(JobRunRegistry)
+
+    if job_type:
+        query = query.where(JobRunRegistry.job_type == job_type)
+
+    if status:
+        query = query.where(JobRunRegistry.status == status)
+
+    count_query = select(func.count()).select_from(JobRunRegistry)
+
+    if job_type:
+        count_query = count_query.where(JobRunRegistry.job_type == job_type)
+
+    if status:
+        count_query = count_query.where(JobRunRegistry.status == status)
+
+    total_result = await db.execute(count_query)
     total = total_result.scalar_one()
 
-    result = await db.execute(
-        select(JobRunRegistry)
+    query = (
+        query
         .order_by(desc(JobRunRegistry.created_at))
         .offset(offset)
         .limit(limit)
     )
 
+    result = await db.execute(query)
     jobs = result.scalars().all()
 
     data = []
