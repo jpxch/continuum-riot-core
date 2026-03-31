@@ -10,6 +10,11 @@ from app.models.job_run import JobRunRegistry
 
 router = APIRouter()
 
+MAX_LIMIT = 100
+
+VALID_STATUSES = {"success", "failed", "running"}
+VALID_JOB_TYPES = {"ddragon_sync"}
+
 
 @router.get("/jobs/recent")
 async def get_recent_jobs(
@@ -20,6 +25,25 @@ async def get_recent_jobs(
     status: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
 ):
+
+    if limit > MAX_LIMIT:
+        limit = MAX_LIMIT
+
+    if offset < 0:
+        raise HTTPException(status_code=400, detail="offset must be >=0")
+
+    if status and status not in VALID_STATUSES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid status. Must be one of {VALID_STATUSES}"
+        )
+
+    if job_type and job_type not in VALID_JOB_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid job_type. Must be one of {VALID_JOB_TYPES}"
+        )
+
     query = select(JobRunRegistry)
 
     if job_type:
