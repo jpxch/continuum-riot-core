@@ -39,12 +39,23 @@ async def engine():
 
 
 @pytest.fixture
-async def db_session(engine):
+async def db_connection(engine):
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
+        nested = await conn.begin_nested()
 
-    async_session = async_sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
+        try:
+            yield conn
+        finally:
+            await nested.rollback()
+            await trans.rollback()
+
+@pytest.fixture
+async def db_session(db_connection):
+    async_session = async_sessionmaker(
+        bind=db_connection,
+        expire_on_commit=False,
+        class_=AsyncSession,
+    )
 
     async with async_session() as session:
         yield session
@@ -52,8 +63,15 @@ async def db_session(engine):
 
 @pytest.fixture
 async def client(db_session):
+    async_session = async_sessionmaker(
+        bind=db_connection,
+        expire_on_commit=False,
+        class_=AsyncSession,
+    )
+
     async def override_get_db():
-        yield db_session
+        async with async_session() as session:
+            yield session
 
     app.dependency_overrides[get_db] = override_get_db
 
@@ -61,7 +79,7 @@ async def client(db_session):
 
     async with AsyncClient(
         transport=transport,
-        base_url="http://test"
+        base_url="http://test",
     ) as client:
         yield client
 
