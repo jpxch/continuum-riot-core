@@ -4,6 +4,7 @@ import pytest
 from httpx import AsyncClient, ASGITransport
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy import event
 
 from app.main import app
 from app.db.session import get_db
@@ -40,13 +41,12 @@ async def engine():
 
 @pytest.fixture
 async def db_connection(engine):
-    async with engine.begin() as conn:
-        nested = await conn.begin_nested()
+    async with engine.connect() as conn:
+        trans = await conn.begin()
 
         try:
             yield conn
         finally:
-            await nested.rollback()
             await trans.rollback()
 
 @pytest.fixture
@@ -62,7 +62,7 @@ async def db_session(db_connection):
 
 
 @pytest.fixture
-async def client(db_session):
+async def client(db_connection):
     async_session = async_sessionmaker(
         bind=db_connection,
         expire_on_commit=False,
