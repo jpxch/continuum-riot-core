@@ -149,3 +149,39 @@ async def test_get_job_by_id_not_found(client):
     assert body["status"] == "error"
     assert body["error"]["code"] == "JOB_NOT_FOUND"
     assert body["error"]["message"] == f"Job '{fake_id}' does not exist."
+
+
+async def test_job_summary(client, db_session):
+    from datetime import datetime, timezone
+    from app.models.job_run import JobRunRegistry
+
+    jobs = [
+        JobRunRegistry(
+            job_type="ddragon_sync",
+            status="success",
+            job_metadata={"duration_ms": 1000},
+            started_at=datetime.now(timezone.utc),
+            created_at=datetime.now(timezone.utc),
+        ),
+        JobRunRegistry(
+            job_type="ddragon_sync",
+            status="failed",
+            job_metadata={"duration_ms": 2000},
+            started_at=datetime.now(timezone.utc),
+            created_at=datetime.now(timezone.utc),
+        ),
+    ]
+    
+    db_session.add_all(jobs)
+    await db_session.commit()
+
+    response = await client.get("/v1/jobs/summary")
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["status"] == "success"
+    assert body["data"]["total"] == 2
+    assert body["data"]["success"] == 1
+    assert body["data"]["failed"] == 1
