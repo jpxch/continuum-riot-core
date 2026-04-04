@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException, status, Query
 from uuid import UUID
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,26 +22,37 @@ async def get_recent_jobs(
     limit: int = 10,
     offset: int = 0,
     job_type: Optional[str] = None,
-    status: Optional[str] = None,
+    job_status: Optional[str] = Query(default=None, alias="status"),
     db: AsyncSession = Depends(get_db),
 ):
-
     if limit > MAX_LIMIT:
         limit = MAX_LIMIT
 
     if offset < 0:
-        raise HTTPException(status_code=400, detail="offset must be >=0")
-
-    if status and status not in VALID_STATUSES:
         raise HTTPException(
-            status_code=400,
-            detail=f"Invalid status. Must be one of {VALID_STATUSES}"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "INVALID_OFFSET",
+                "message": "offset must be >= 0",
+            },
+        )
+
+    if job_status and job_status not in VALID_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "INVALID_STATUS",
+                "message": f"Invalid status. Must be one of {sorted(VALID_STATUSES)}",
+            },
         )
 
     if job_type and job_type not in VALID_JOB_TYPES:
         raise HTTPException(
-            status_code=400,
-            detail=f"Invalid job_type. Must be one of {VALID_JOB_TYPES}"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "INVALID_JOB_TYPE",
+                "message": f"Invalid job_type. Must be one of {sorted(VALID_JOB_TYPES)}",
+            },
         )
 
     query = select(JobRunRegistry)
@@ -49,16 +60,16 @@ async def get_recent_jobs(
     if job_type:
         query = query.where(JobRunRegistry.job_type == job_type)
 
-    if status:
-        query = query.where(JobRunRegistry.status == status)
+    if job_status is not None:
+        query = query.where(JobRunRegistry.status == job_status)
 
     count_query = select(func.count()).select_from(JobRunRegistry)
 
     if job_type:
         count_query = count_query.where(JobRunRegistry.job_type == job_type)
 
-    if status:
-        count_query = count_query.where(JobRunRegistry.status == status)
+    if job_status is not None:
+        count_query = count_query.where(JobRunRegistry.status == job_status)
 
     total_result = await db.execute(count_query)
     total = total_result.scalar_one()
@@ -78,16 +89,18 @@ async def get_recent_jobs(
     for job in jobs:
         metadata = job.job_metadata or {}
 
-        data.append({
-            "id": str(job.id),
-            "job_type": job.job_type,
-            "status": job.status,
-            "patch": metadata.get("patch"),
-            "duration_ms": metadata.get("duration_ms"),
-            "assets": metadata.get("assets"),
-            "started_at": job.started_at,
-            "finished_at": job.finished_at,
-        })
+        data.append(
+            {
+                "id": str(job.id),
+                "job_type": job.job_type,
+                "status": job.status,
+                "patch": metadata.get("patch"),
+                "duration_ms": metadata.get("duration_ms"),
+                "assets": metadata.get("assets"),
+                "started_at": job.started_at,
+                "finished_at": job.finished_at,
+            }
+        )
 
     return success_response(
         request,
@@ -96,8 +109,9 @@ async def get_recent_jobs(
             "limit": limit,
             "offset": offset,
             "total": total,
-        }
+        },
     )
+
 
 @router.get("/jobs/latest")
 async def get_latest_job(
@@ -105,6 +119,15 @@ async def get_latest_job(
     job_type: str,
     db: AsyncSession = Depends(get_db),
 ):
+    if job_type not in VALID_JOB_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "INVALID_JOB_TYPE",
+                "message": f"Invalid job_type. Must be one of {sorted(VALID_JOB_TYPES)}",
+            },
+        )
+
     result = await db.execute(
         select(JobRunRegistry)
         .where(JobRunRegistry.job_type == job_type)
@@ -115,7 +138,13 @@ async def get_latest_job(
     job = result.scalar_one_or_none()
 
     if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "JOB_NOT_FOUND",
+                "message": f"No job found for job_type '{job_type}'.",
+            },
+        )
 
     metadata = job.job_metadata or {}
 
@@ -129,14 +158,12 @@ async def get_latest_job(
             "error": job.error_message,
             "started_at": job.started_at,
             "finished_at": job.finished_at,
-
             "patch": metadata.get("patch"),
             "locale": metadata.get("locale"),
             "duration_ms": metadata.get("duration_ms"),
             "assets": metadata.get("assets"),
-
             "metadata": metadata,
-        }
+        },
     )
 
 
@@ -153,7 +180,13 @@ async def get_job_by_id(
     job = result.scalar_one_or_none()
 
     if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "JOB_NOT_FOUND",
+                "message": f"Job '{job_id}' does not exist.",
+            },
+        )
 
     metadata = job.job_metadata or {}
 
@@ -167,13 +200,10 @@ async def get_job_by_id(
             "error": job.error_message,
             "started_at": job.started_at,
             "finished_at": job.finished_at,
-
             "patch": metadata.get("patch"),
             "locale": metadata.get("locale"),
             "duration_ms": metadata.get("duration_ms"),
             "assets": metadata.get("assets"),
-
             "metadata": metadata,
-        }
+        },
     )
-
