@@ -6,6 +6,7 @@ import contextlib
 
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import HTTPException as FastAPIHTTPException
 
 from app.api.router import router as v1_router
 from app.api.response import error_response
@@ -48,6 +49,24 @@ async def request_id_middleware(request: Request, call_next):
     return response
 
 
+@app.exception_handler(FastAPIHTTPException)
+async def http_exception_handler(request: Request, exc: FastAPIHTTPException):
+    if isinstance(exc.detail, dict):
+        code = exc.detail.get("code", "UNKNOWN_ERROR")
+        message = exc.detail.get("message", "An error occurred")
+    else:
+        code = "HTTP_ERROR"
+        message = str(exc.detail)
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=error_response(
+            request,
+            code=code,
+            message=message,
+        ),
+    )
+
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
@@ -55,6 +74,6 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
         content=error_response(
             request,
             code="INTERNAL_ERROR",
-            message="An unexpected error occured.",
+            message="An unexpected error occurred.",
         ),
     )
