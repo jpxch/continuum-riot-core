@@ -48,8 +48,9 @@ async def test_recent_jobs_invalid_status(client):
     assert response.status_code == 400
 
     body = response.json()
-    assert body["detail"]["code"] == "INVALID_STATUS"
-    assert "Invalid status" in body["detail"]["message"]
+    assert body["status"] == "error"
+    assert body["error"]["code"] == "INVALID_STATUS"
+    assert "Invalid status" in body["error"]["message"]
 
 
 async def test_recent_jobs_invalid_offset(client):
@@ -58,8 +59,9 @@ async def test_recent_jobs_invalid_offset(client):
     assert response.status_code == 400
 
     body = response.json()
-    assert body["detail"]["code"] == "INVALID_OFFSET"
-    assert body["detail"]["message"] == "offset must be >= 0"
+    assert body["status"] == "error"
+    assert body["error"]["code"] == "INVALID_OFFSET"
+    assert body["error"]["message"] == "offset must be >= 0"
 
 
 async def test_recent_jobs_invalid_job_type(client):
@@ -68,8 +70,9 @@ async def test_recent_jobs_invalid_job_type(client):
     assert response.status_code == 400
 
     body = response.json()
-    assert body["detail"]["code"] == "INVALID_JOB_TYPE"
-    assert "Invalid job_type" in body["detail"]["message"]
+    assert body["status"] == "error"
+    assert body["error"]["code"] == "INVALID_JOB_TYPE"
+    assert "Invalid job_type" in body["error"]["message"]
 
 
 async def test_latest_job_success(client, db_session):
@@ -99,8 +102,9 @@ async def test_latest_job_not_found(client):
     assert response.status_code == 404
 
     body = response.json()
-    assert body["detail"]["code"] == "JOB_NOT_FOUND"
-    assert body["detail"]["message"] == "No job found for job_type 'ddragon_sync'."
+    assert body["status"] == "error"
+    assert body["error"]["code"] == "JOB_NOT_FOUND"
+    assert body["error"]["message"] == "No job found for job_type 'ddragon_sync'."
 
 
 async def test_latest_job_invalid_job_type(client):
@@ -109,8 +113,9 @@ async def test_latest_job_invalid_job_type(client):
     assert response.status_code == 400
 
     body = response.json()
-    assert body["detail"]["code"] == "INVALID_JOB_TYPE"
-    assert "Invalid job_type" in body["detail"]["message"]
+    assert body["status"] == "error"
+    assert body["error"]["code"] == "INVALID_JOB_TYPE"
+    assert "Invalid job_type" in body["error"]["message"]
 
 async def test_get_job_by_id(client, db_session):
     job = JobRunRegistry(
@@ -141,5 +146,6 @@ async def test_get_job_by_id_not_found(client):
     assert response.status_code == 404
 
     body = response.json()
-    assert body["detail"]["code"] == "JOB_NOT_FOUND"
-    assert body["detail"]["message"] == f"Job '{fake_id}' does not exist."
+    assert body["status"] == "error"
+    assert body["error"]["code"] == "JOB_NOT_FOUND"
+    assert body["error"]["message"] == f"Job '{fake_id}' does not exist."
