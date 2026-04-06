@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request, HTTPException, status, Query
 from uuid import UUID
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
+from sqlalchemy import select, desc, func, case
 
 from app.api.response import success_response
 from app.db.session import get_db
@@ -165,6 +165,54 @@ async def get_latest_job(
             "metadata": metadata,
         },
     )
+
+
+@router.get("/jobs/summary")
+async def get_jobs_summary(
+    request: Request,
+    job_type: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    if job_type and job_type not in VALID_JOB_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "INVALID_JOB_TYPE",
+                "message": f"Invalid job_type. Must be one of {sorted(VALID_JOB_TYPES)}",
+            },
+        )
+
+    summary_query = select(
+        func.count().label("total"),
+        func.sum(case((JobRunRegistry.status == "success", 1), else_=0)).label("sucesss"),
+        func.sum(case((JobRunRegistry.status == "failed", 1), else_=0)).label("failed"),
+        func.sum(case((JobRunRegistry.status == "running", 1), else_=0)).label("running"),
+        func.avg(
+            case(
+                (JobRunRegistry.status.in_(("success", "failed")), JobRunRegistry.job_metadata["duration_ms"].as_integer()),
+                else_=None,
+            )
+        ).label("avg_duration_ms"),
+    )
+
+    if job_type:
+        summary_query = summary_query.where(JobRunRegistry.job_type == job_type)
+
+    result = await db.execute(summary_query)
+    row = result.one()
+
+    rreturn success_response(
+        request,
+        data={
+            "total": int(row.total or 0),
+            "success": int(row.success or 0),
+            "failed": int(row.failed or 0),
+            "running": int(row.running or 0),
+            "avg_duration_ms": float(row.avg_duration_ms or 0),
+
+        },
+    )
+
 
 
 @router.get("/jobs/{job_id}")
