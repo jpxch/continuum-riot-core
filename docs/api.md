@@ -122,7 +122,7 @@ Behavior:
 
 ### Jobs
 
-The jobs surface exposes recent and latest background job outcomes recorded in `job_run_registry`. It is currently the main API-visible observability surface for ingestion runs.
+The jobs surface exposes background job outcomes recorded in `job_run_registry`. It is currently the main API-visible observability surface for ingestion runs and supports both per-run inspection and aggregate failure/summary views.
 
 #### `GET /v1/jobs/recent`
 
@@ -182,6 +182,57 @@ Errors:
 - `400`: `INVALID_JOB_TYPE`
 - `404`: `JOB_NOT_FOUND`
 
+#### `GET /v1/jobs/summary`
+
+Query params:
+
+- `job_type` optional, current allowlist: `ddragon_sync`
+
+Returns:
+
+- `200`: success envelope with:
+  - `data.total`
+  - `data.success`
+  - `data.failed`
+  - `data.running`
+  - `data.avg_duration_ms`
+
+Interpretation:
+
+- `total` is the number of recorded jobs in scope.
+- `success`, `failed`, and `running` are counts by terminal or active state.
+- `avg_duration_ms` averages only completed jobs with status `success` or `failed`; running jobs are excluded.
+- Empty result sets return zeros rather than `null`.
+
+Errors:
+
+- `400`: `INVALID_JOB_TYPE`
+
+#### `GET /v1/jobs/failures`
+
+Query params:
+
+- `job_type` optional, current allowlist: `ddragon_sync`
+
+Returns:
+
+- `200`: success envelope with:
+  - `data.total_failures`
+  - `data.by_error[]` entries containing:
+    - `error`
+    - `count`
+
+Interpretation:
+
+- Only jobs with `status = "failed"` are included.
+- `total_failures` is the sum of all grouped failure counts in scope.
+- `by_error` is grouped by `error_message` and sorted by descending count.
+- Missing or empty stored failure messages are normalized to `"unknown"` in the response.
+
+Errors:
+
+- `400`: `INVALID_JOB_TYPE`
+
 #### `GET /v1/jobs/{job_id}`
 
 Path params:
@@ -200,6 +251,8 @@ Errors:
 
 - The current API surface is consistently envelope-based for both success and error responses.
 - `meta.dataVersion` is meaningful for patch-driven content and may be `null` for operational endpoints such as jobs.
+- Use `/v1/jobs/recent` for timeline-style support/debug views, `/v1/jobs/latest` and `/v1/jobs/{job_id}` for single-run inspection, `/v1/jobs/summary` for health snapshots, and `/v1/jobs/failures` for repeated-error triage.
+- The current `job_type` allowlist is intentionally narrow. Consumers should treat it as a validated enum rather than assuming arbitrary future values will be accepted.
 - The jobs endpoints are useful for ingestion visibility, but broader versioning, pagination, and deprecation policy is still being formalized.
 
 ## Verification Notes

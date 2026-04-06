@@ -53,6 +53,11 @@
 - If endpoints return `NO_CURRENT_PATCH`, run:
   - `POST /v1/ddragon/sync`
 - If static endpoints return `ASSET_NOT_READY`, wait for background ingestion to finish and retry.
+- To inspect recent ingestion outcomes locally:
+  - `curl http://127.0.0.1:8000/v1/jobs/recent`
+  - `curl "http://127.0.0.1:8000/v1/jobs/latest?job_type=ddragon_sync"`
+  - `curl http://127.0.0.1:8000/v1/jobs/summary`
+  - `curl http://127.0.0.1:8000/v1/jobs/failures`
 - Mini deployment checks:
   - `systemctl status continuum-riot-core.service --no-pager -l`
   - `journalctl -u continuum-riot-core.service -n 100 --no-pager`
