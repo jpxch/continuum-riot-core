@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict
 
 from fastapi import Request
+from app.core.logging import get_request_id
 
 
 REQUIRED_META_FIELDS = {
@@ -53,7 +54,7 @@ def success_response(
     return response
 
 
-def error_reponse(
+def error_response(
     request: Request,
     code: str,
     message: str,
