@@ -1,38 +1,71 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Dict
 
 from fastapi import Request
-from app.core.config import settings
-from app.core.logging import get_request_id
+
+
+REQUIRED_META_FIELDS = {
+    "resquestId",
+    "apiVersion",
+    "dataVersion",
+    "generatedAt",
+}
 
 def success_response(
     request: Request,
     data: Any,
     data_version: str | None = None,
-    meta: dict[str, Any] | None = None,
-) -> dict:
-    response_meta = {
+    meta: Dict[str, Any] | None = None,
+) -> Dict[str, Any]:
+    """
+    Canonical sucess reponse builder.
+
+    Guarantees:
+    - stable envelopment
+    - required meta fields always present
+    - controlled meta merging
+    """
+
+    base_meta = {
         "requestId": get_request_id(),
         "apiVersion": "v1",
         "dataVersion": data_version,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
     }
-    if meta:
-        response_meta.update(meta)
 
-    return {
+    if meta:
+        for key in meta:
+            if key in REQUIRED_META_FIELDS:
+                raise ValueError(
+                    f"Meta field '{key}' is reserved and cannot be overridden."
+                )
+        base_meta.update(meta)
+
+    response = {
         "status": "success",
         "data": data,
-        "meta": response_meta,
+        "meta": base_meta,
     }
 
-def error_response(
+
+    return response
+
+
+def error_reponse(
     request: Request,
     code: str,
     message: str,
-) -> dict:
+) -> Dict[str, Any]:
+    """
+    Canonical error response builder.
+
+    Guarantees:
+    - stable error shape
+    - request correlation via requestId
+    """
+
     return {
         "status": "error",
         "error": {
