@@ -184,7 +184,7 @@ async def get_jobs_summary(
 
     summary_query = select(
         func.count().label("total"),
-        func.sum(case((JobRunRegistry.status == "success", 1), else_=0)).label("sucesss"),
+        func.sum(case((JobRunRegistry.status == "success", 1), else_=0)).label("success"),
         func.sum(case((JobRunRegistry.status == "failed", 1), else_=0)).label("failed"),
         func.sum(case((JobRunRegistry.status == "running", 1), else_=0)).label("running"),
         func.avg(
@@ -200,15 +200,16 @@ async def get_jobs_summary(
 
     result = await db.execute(summary_query)
     row = result.one()
+    data = row._mapping
 
-    rreturn success_response(
+    return success_response(
         request,
         data={
-            "total": int(row.total or 0),
-            "success": int(row.success or 0),
-            "failed": int(row.failed or 0),
-            "running": int(row.running or 0),
-            "avg_duration_ms": float(row.avg_duration_ms or 0),
+            "total": int(data["total"] or 0),
+            "success": int(data["success"] or 0),
+            "failed": int(data["failed"] or 0),
+            "running": int(data["running"] or 0),
+            "avg_duration_ms": float(data["avg_duration_ms"] or 0),
 
         },
     )
