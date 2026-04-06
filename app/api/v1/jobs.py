@@ -4,6 +4,7 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, func, case
 
+from app.api.pagination import paginate_result
 from app.api.response import success_response
 from app.db.session import get_db
 from app.models.job_run import JobRunRegistry
@@ -102,14 +103,18 @@ async def get_recent_jobs(
             }
         )
 
+    data, meta = paginate_result(
+        items=data,
+        total=total,
+        limit=limit,
+        offset=offset,
+
+    )
+
     return success_response(
         request,
         data=data,
-        meta={
-            "limit": limit,
-            "offset": offset,
-            "total": total,
-        },
+        meta=meta,
     )
 
 
