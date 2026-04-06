@@ -10,6 +10,6 @@ router = APIRouter()
 async def health(request: Request):
     return success_response(
         request,
-        data={"status": "ok"},
+        data={"service": "healthy"},
         data_version=None,
     )

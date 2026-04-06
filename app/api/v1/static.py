@@ -16,15 +16,6 @@ from app.core.config import settings
 
 router = APIRouter()
 
-def error_response(code: str, message: str, status_code: int):
-    raise HTTPException(
-        status_code=status_code,
-        detail={
-            "code": code,
-            "message": message,
-        },
-    )
-
 @router.get("/patch")
 async def read_patch(
     request: Request,
@@ -64,10 +55,16 @@ async def read_champions(
     session: AsyncSession = Depends(get_db)
 ):
     try:
+        patch = await get_current_patch(session)
         data = await load_asset_json(session, AssetType.CHAMPION)
-        return success_response(request, data=data)
+
+        return success_response(
+            request,
+            data=data,
+            data_version=patch,
+        )
     except RuntimeError as e:
-        handle_runtime_error(e)
+        raise handle_runtime_error(e)
 
 @router.get("/items")
 async def read_items(
@@ -75,10 +72,15 @@ async def read_items(
     session: AsyncSession = Depends(get_db)
 ):
     try:
+        patch = await get_current_patch(session)
         data = await load_asset_json(session, AssetType.ITEM)
-        return success_response(request, data=data)
+        return success_response(
+            request,
+            data=data,
+            data_version=patch,
+        )
     except RuntimeError as e:
-        handle_runtime_error(e)
+        raise handle_runtime_error(e)
 
 @router.get("/runes")
 async def read_runes(
@@ -86,10 +88,15 @@ async def read_runes(
     session: AsyncSession = Depends(get_db)
 ):
     try:
+        patch = await get_current_patch(session)
         data = await load_asset_json(session, AssetType.RUNE)
-        return success_response(request, data=data)
+        return success_response(
+            request,
+            data=data,
+            data_version=patch,
+        )
     except RuntimeError as e:
-        handle_runtime_error(e)
+        raise handle_runtime_error(e)
 
 @router.get("/summoners")
 async def read_summoners(
@@ -97,50 +104,67 @@ async def read_summoners(
     session: AsyncSession = Depends(get_db)
 ):
     try:
+        patch = await get_current_patch(session)
         data = await load_asset_json(session, AssetType.SUMMONER)
-        return success_response(request, data=data)
+        return success_response(
+            request,
+            data=data,
+            data_version=patch,
+        )
     except RuntimeError as e:
-        handle_runtime_error(e)
+        raise handle_runtime_error(e)
 
-def handle_runtime_error(e: RuntimeError):
+def handle_runtime_error(e: RuntimeError) -> HTTPException:
     code = str(e)
     if code == "NO_CURRENT_PATCH":
-        error_response(
-            code,
-            "No current patch available.",
-            status.HTTP_404_NOT_FOUND,
+        return HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": code,
+                "message": "No current patch available.",
+            },
         )
 
     if code == "ASSET_NOT_READY":
-        error_response(
-            code,
-            "Requested asset not yet ingested.",
-            status.HTTP_409_CONFLICT,
+        return HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": code,
+                "message": "Requested asset not yet ingested.",
+            },
         )
 
     if code == "FILE_MISSING":
-        error_response(
-            code,
-            "Asset registry entry exists but file is missing.",
-            status.HTTP_500_INTERNAL_SERVER_ERROR,
+        return HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "code": code,
+                "message": "Asset registry entry exists but file is missing.",
+            },
         )
 
     if code == "INVALID_JSON":
-        error_response(
-            code,
-            "Asset file is corrupted or invalid JSON.",
-            status.HTTP_500_INTERNAL_SERVER_ERROR,
+        return HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "code": code,
+                "message": "Asset file is corrupted or invalid JSON.",
+            },
         )
 
     if code == "UNKNOWN_ASSET_TYPE":
-        error_response(
-            code,
-            "Requested asset type is not supported.",
-            status.HTTP_400_BAD_REQUEST,
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": code,
+                "message": "Requested asset type is not supported.",
+            },
         )
 
-    error_response(
-        "UNKNOWN_ERROR",
-        "Unexpected error occurred.",
-        status.HTTP_500_INTERNAL_SERVER_ERROR,
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail={
+            "code": "UNKNOWN_ERROR",
+            "message": "Unexpected error occurred.",
+        },
     )
