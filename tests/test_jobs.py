@@ -281,3 +281,68 @@ async def test_job_summary_filters_by_job_type(client, db_session):
     assert body["data"]["failed"] == 0
     assert body["data"]["running"] == 0
     assert body["data"]["avg_duration_ms"] == 1200
+
+
+async def test_job_failures_empty(client):
+    response = await client.get("/v1/jobs/failures")
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["status"] == "success"
+    assert body["data"]["total_failures"] == 0
+    assert body["data"]["by_error"] == []
+
+
+async def test_job_failures_with_data(client, db_session):
+    jobs = [
+        JobRunRegistry(
+            job_type="ddragon_sync",
+            status="failed",
+            error_message="timeout",
+            started_at=datetime.now(timezone.utc),
+            created_at=datetime.now(timezone.utc),
+        ),
+        JobRunRegistry(
+            job_type="ddragon_sync",
+            status="failed",
+            error_message="timeout",
+            started_at=datetime.now(timezone.utc),
+            created_at=datetime.now(timezone.utc),
+        ),
+        JobRunRegistry(
+            job_type="ddragon_sync",
+            status="failed",
+            error_message="rate_limit",
+            started_at=datetime.now(timezone.utc),
+            created_at=datetime.now(timezone.utc),
+        ),
+    ]
+
+    db_session.add_all(jobs)
+    await db_session.commit()
+
+    response = await client.get("/v1/jobs/failures")
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["status"] == "success"
+    assert body["data"]["total_failures"] == 3
+
+    errors = {e["error"]: e["count"] for e in body["data"]["by_error"]}
+
+    assert errors["timeout"] == 2
+    assert errors["rate_limit"] == 1
+
+async def test_job_failures_invalid_job_type(client):
+    response = await client.get("/v1/jobs/failures?job_type=bad_type")
+
+    assert response.status_code == 400
+
+    body = response.json()
+
+    assert body["status"] == "error"
+    assert body["error"]["code"] == "INVALID_JOB_TYPE"

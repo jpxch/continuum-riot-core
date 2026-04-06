@@ -256,3 +256,53 @@ async def get_job_by_id(
             "metadata": metadata,
         },
     )
+
+@router.get("/jobs/failures")
+async def get_job_failures(
+    request: Request,
+    job_type: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    from sqlalchemy import func
+
+    if job_type and job_type not in VALID_JOB_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "INVALID_JOB_TYPE",
+                "message": f"Invalid job_type. Must be one of {sorted(VALID_JOB_TYPES)}",
+            },
+        )
+
+    query = select(
+        JobRunRegistry.error_message,
+        func.count().label("count"),
+    ).where(
+        JobRunRegistry.status == "failed"
+    )
+
+    if job_type:
+        query = query.where(JobRunRegistry.job_type == job_type)
+
+    query = query.group_by(JobRunRegistry.error_message).order_by(func.count().desc())
+
+    result = await db.execute(query)
+    rows = result.all()
+
+    failures = [
+        {
+            "error": row[0] or "unknown",
+            "count": row[1],
+        }
+        for row in rows
+    ]
+
+    total_failures = sum(item["count"] for item in failures)
+
+    return success_response(
+        request,
+        data={
+            "total_failures": total_failures,
+            "by_error": failures,
+        },
+    )
