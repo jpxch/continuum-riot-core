@@ -27,10 +27,20 @@ def contract_response(func: Callable) -> Callable:
         if isinstance(result, dict) and "status" in result:
             return result
 
+        data_version = None
+        meta = None
+
+        if isinstance(result, dict) and "__data__" in result:
+            data_version = result.get("__data_version__")
+            meta = result.get("__meta__")
+            result = result["__data__"]
+
         # Otherwise wrap it
         return success_response(
             request=request,
             data=result,
+            data_version=data_version,
+            meta=meta,
         )
 
     return wrapper

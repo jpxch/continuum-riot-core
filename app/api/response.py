@@ -8,7 +8,7 @@ from app.core.logging import get_request_id
 
 
 REQUIRED_META_FIELDS = {
-    "resquestId",
+    "requestId",
     "apiVersion",
     "dataVersion",
     "generatedAt",
