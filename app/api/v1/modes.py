@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Request, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.api.contracts import contract_response
+from app.api.contract import contract_response
 from app.services.mode_read import get_current_patch, list_modes_for_patch, get_mode_manifest
 
 router = APIRouter()

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Request
-from app.api.contracts import contract_response
+from app.api.contract import contract_response
 
 router = APIRouter()
 

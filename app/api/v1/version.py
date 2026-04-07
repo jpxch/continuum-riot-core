@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.contracts import contract_response
+from app.api.contract import contract_response
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.patch import PatchRegistry

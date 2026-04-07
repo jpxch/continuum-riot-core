@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.api.contracts import contract_response
+from app.api.contract import contract_response
 from app.models.asset import AssetType
 from app.services.static_read import (
     get_current_patch,
