@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.api.response import success_response
+from app.api.contracts import contract_response
 from app.models.asset import AssetType
 from app.services.static_read import (
     get_current_patch,
@@ -17,6 +17,7 @@ from app.core.config import settings
 router = APIRouter()
 
 @router.get("/patch")
+@contract_response
 async def read_patch(
     request: Request,
     session: AsyncSession = Depends(get_db),
@@ -39,17 +40,17 @@ async def read_patch(
             asset_type,
         )
 
-    return success_response(
-        request,
-        data={
+    return {
+        "__data__": {
             "currentPatch": patch,
             "locale": settings.DEFAULT_LOCALE,
             "assets": readiness,
         },
-        data_version=patch,
-    )
+        "__data_version__": patch,
+    }
 
 @router.get("/champions")
+@contract_response
 async def read_champions(
     request: Request,
     session: AsyncSession = Depends(get_db)
@@ -58,15 +59,16 @@ async def read_champions(
         patch = await get_current_patch(session)
         data = await load_asset_json(session, AssetType.CHAMPION)
 
-        return success_response(
-            request,
-            data=data,
-            data_version=patch,
-        )
+        return {
+            "__data__": data,
+            "__data_version__": patch,
+
+        }
     except RuntimeError as e:
         raise handle_runtime_error(e)
 
 @router.get("/items")
+@contract_response
 async def read_items(
     request: Request,
     session: AsyncSession = Depends(get_db)
@@ -74,15 +76,16 @@ async def read_items(
     try:
         patch = await get_current_patch(session)
         data = await load_asset_json(session, AssetType.ITEM)
-        return success_response(
-            request,
-            data=data,
-            data_version=patch,
-        )
+        return {
+            "__data__": data,
+            "__data_version__": patch,
+
+        }
     except RuntimeError as e:
         raise handle_runtime_error(e)
 
 @router.get("/runes")
+@contract_response
 async def read_runes(
     request: Request,
     session: AsyncSession = Depends(get_db)
@@ -90,15 +93,15 @@ async def read_runes(
     try:
         patch = await get_current_patch(session)
         data = await load_asset_json(session, AssetType.RUNE)
-        return success_response(
-            request,
-            data=data,
-            data_version=patch,
-        )
+        return {
+            "__data__": data,
+            "__data_version__": patch,
+        }
     except RuntimeError as e:
         raise handle_runtime_error(e)
 
 @router.get("/summoners")
+@contract_response
 async def read_summoners(
     request: Request,
     session: AsyncSession = Depends(get_db)
@@ -106,11 +109,10 @@ async def read_summoners(
     try:
         patch = await get_current_patch(session)
         data = await load_asset_json(session, AssetType.SUMMONER)
-        return success_response(
-            request,
-            data=data,
-            data_version=patch,
-        )
+        return {
+            "__data__": data,
+            "__data_version__": patch,
+        }
     except RuntimeError as e:
         raise handle_runtime_error(e)
 

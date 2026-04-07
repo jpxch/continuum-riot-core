@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.contracts import contract_response
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.patch import PatchRegistry
@@ -13,6 +14,7 @@ router = APIRouter()
 
 
 @router.get("/version")
+@contract_response
 async def version(
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -22,11 +24,10 @@ async def version(
 
     data_version = row.patch if row else None
 
-    return success_response(
-        request,
-        data={
+    return {
+        "__data__": {
             "service": settings.SERVICE_NAME,
             "env": settings.ENV,
         },
-        data_version=data_version,
-    )
+        "__data_version__": data_version,
+    }

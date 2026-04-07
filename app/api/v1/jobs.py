@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, func, case
 
 from app.api.pagination import paginate_result
-from app.api.response import success_response
 from app.db.session import get_db
 from app.models.job_run import JobRunRegistry
 
@@ -18,6 +17,7 @@ VALID_JOB_TYPES = {"ddragon_sync"}
 
 
 @router.get("/jobs/recent")
+@contract_response
 async def get_recent_jobs(
     request: Request,
     limit: int = 10,
@@ -111,14 +111,14 @@ async def get_recent_jobs(
 
     )
 
-    return success_response(
-        request,
-        data=data,
-        meta=meta,
-    )
+    return {
+        "__data__": data,
+        "__meta__": meta,
+    }
 
 
 @router.get("/jobs/latest")
+@contract_response
 async def get_latest_job(
     request: Request,
     job_type: str,
@@ -153,9 +153,8 @@ async def get_latest_job(
 
     metadata = job.job_metadata or {}
 
-    return success_response(
-        request,
-        data={
+    return {
+        "__data__": {
             "id": str(job.id),
             "job_type": job.job_type,
             "job_key": job.job_key,
@@ -169,10 +168,11 @@ async def get_latest_job(
             "assets": metadata.get("assets"),
             "metadata": metadata,
         },
-    )
+    }
 
 
 @router.get("/jobs/summary")
+@contract_response
 async def get_jobs_summary(
     request: Request,
     job_type: Optional[str] = None,
@@ -207,9 +207,8 @@ async def get_jobs_summary(
     row = result.one()
     data = row._mapping
 
-    return success_response(
-        request,
-        data={
+    return {
+        "__data__": {
             "total": int(data["total"] or 0),
             "success": int(data["success"] or 0),
             "failed": int(data["failed"] or 0),
@@ -217,9 +216,10 @@ async def get_jobs_summary(
             "avg_duration_ms": float(data["avg_duration_ms"] or 0),
 
         },
-    )
+    }
 
 @router.get("/jobs/failures")
+@contract_response
 async def get_job_failures(
     request: Request,
     job_type: Optional[str] = None,
@@ -261,17 +261,17 @@ async def get_job_failures(
 
     total_failures = sum(item["count"] for item in failures)
 
-    return success_response(
-        request,
-        data={
+    return {
+        "__data__": {
             "total_failures": total_failures,
             "by_error": failures,
         },
-    )
+    }
 
 
 
 @router.get("/jobs/{job_id}")
+@contract_response
 async def get_job_by_id(
     job_id: UUID,
     request: Request,
@@ -294,9 +294,8 @@ async def get_job_by_id(
 
     metadata = job.job_metadata or {}
 
-    return success_response(
-        request,
-        data={
+    return {
+        "__data__": {
             "id": str(job.id),
             "job_type": job.job_type,
             "job_key": job.job_key,
@@ -310,5 +309,6 @@ async def get_job_by_id(
             "assets": metadata.get("assets"),
             "metadata": metadata,
         },
-    )
+        "__data_version__": job.finished_at.isoformat() if job.finished_at else None,
+    }
 
