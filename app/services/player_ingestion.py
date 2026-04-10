@@ -6,7 +6,7 @@ from app.core.config import settings
 RIOT_BASE_URL = "https://americas.api.riotgames.com"
 
 
-async def fetch_match_ids(puuid: str, count: int = 50) -> List[str]:
+async def fetch_match_ids(puuid: str, total: int = 50) -> List[str]:
     url = f"{RIOT_BASE_URL}/lol/match/v5/matches/by-puuid/{puuid}/ids"
 
     headers = {
