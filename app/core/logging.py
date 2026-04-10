@@ -34,7 +34,15 @@ def _configure_library_log_levels() -> None:
 def configure_logging(service_name: str, env: str) -> None:
     # stdlib logging -> JSON
     handler = logging.StreamHandler(sys.stdout)
-    formatter = jsonlogger.JsonFormatter("%(asctime)s %(levelname)s %(name)s %(message)s")
+    formatter = struclog.stdlib.ProcessorFormatter(
+        processor=structlog.processors.JSONRenderer(),
+        foreign_pre_chain=[
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.add_logger_name,
+            _add_request_id,
+        ],
+    )
     handler.setFormatter(formatter)
 
     root = logging.getLogger()
@@ -51,7 +59,8 @@ def configure_logging(service_name: str, env: str) -> None:
             _add_request_id,
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
-            structlog.processors.JSONRenderer(),
+            structlog.processors.dict_tracebacks,
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ],
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),

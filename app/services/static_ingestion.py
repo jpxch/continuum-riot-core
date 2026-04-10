@@ -6,7 +6,7 @@ from typing import Literal
 import time
 import structlog
 
-logger = structlog.get_logger(__name__)
+logger = structlog.get_logger()
 
 from sqlalchemy import select
 
