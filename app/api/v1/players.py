@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from app.api.contract import contract_response
-from app.services.player_ingestion import fetch_match_ids
+from app.services.player_ingestion import fetch_match_ids, fetch_match
 
 router = APIRouter()
 
