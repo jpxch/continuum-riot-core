@@ -5,7 +5,7 @@ from app.services.player_ingestion import fetch_match_ids
 router = APIRouter()
 
 
-@router.get("/players/{puuid}/sync")
+@router.post("/players/{puuid}/sync")
 @contract_response
 async def sync_player(puuid: str, request: Request):
     match_ids = await fetch_match_ids(puuid)
