@@ -37,3 +37,18 @@ async def fetch_match_ids(puuid: str, total: int = 50) -> List[str]:
             start += batch_size
 
     return all_matches[:total]
+
+async def fetch_match(match_id: str) -> dict:
+    url = f"{RIOT_BASE_URL}/lol/match/v5/matches/{match_id}"
+
+    headers = {
+        "X-Riot-Token": settings.RIOT_API_KEY
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+
+        if response.status_code != 200:
+            raise Exception(f"Riot API error: {response.text}")
+
+        return response.json()

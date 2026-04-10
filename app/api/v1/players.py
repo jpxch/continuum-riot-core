@@ -10,10 +10,16 @@ router = APIRouter()
 async def sync_player(puuid: str, request: Request):
     match_ids = await fetch_match_ids(puuid)
 
+    matches = []
+
+    for match_id in match_ids[:5]:
+        match = await fetch_match(match_id)
+        matches.append(match)
+
     return {
         "__data__": {
             "puuid": puuid,
-            "matches_found": len(match_ids),
-            "match_ids": match_ids
+            "matches_fetched": len(matches),
+            "sample_match": matches[0] if matches else None
         }
     }
