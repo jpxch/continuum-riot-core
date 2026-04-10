@@ -13,10 +13,15 @@ from app.services.job_registry import (
     complete_job_failure,
     JobAlreadyRunningError,
 )
+import logging
+import structlog
+
+logger = structlog.get_logger()
 
 router = APIRouter()
 
 async def run_ddragon_sync_job(patch: str, locale: str):
+    job_start = time.perf_counter()
     async with AsyncSessionLocal() as session:
         try:
             job = await start_job(
@@ -42,6 +47,15 @@ async def run_ddragon_sync_job(patch: str, locale: str):
 
             summary = summarize_results(results)
 
+            job_duration_ms = int((time.perf_counter() - job_start) * 1000)
+
+            logger.info(
+                "ddragon.job.completed",
+                patch=patch,
+                locale=locale,
+                duration_ms=job_duration_ms,
+            )
+
             await complete_job_success(
                 session,
                 job.id,
@@ -54,6 +68,14 @@ async def run_ddragon_sync_job(patch: str, locale: str):
             await session.commit()
 
         except Exception as e:
+            job_duration_ms = int((time.perf_counter() - job_start) * 1000)
+            logger.error(
+                "ddragon.job.failed",
+                patch=patch,
+                locale=locale,
+                duration_ms=job_duration_ms,
+                error=str(e),
+            )
             await complete_job_failure(
                 session,
                 job.id,
