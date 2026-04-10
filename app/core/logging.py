@@ -34,7 +34,7 @@ def _configure_library_log_levels() -> None:
 def configure_logging(service_name: str, env: str) -> None:
     # stdlib logging -> JSON
     handler = logging.StreamHandler(sys.stdout)
-    formatter = struclog.stdlib.ProcessorFormatter(
+    formatter = structlog.stdlib.ProcessorFormatter(
         processor=structlog.processors.JSONRenderer(),
         foreign_pre_chain=[
             structlog.processors.TimeStamper(fmt="iso"),
