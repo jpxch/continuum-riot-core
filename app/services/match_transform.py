@@ -41,7 +41,7 @@ def transform_match(match: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         "match_id": metadata["matchId"],
-        "mode": info["mageMode"],
+        "mode": info["gameMode"],
         "duration": info["gameDuration"],
 
         "players": [
