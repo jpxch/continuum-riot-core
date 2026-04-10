@@ -13,7 +13,7 @@ from app.services.job_registry import (
     complete_job_failure,
     JobAlreadyRunningError,
 )
-import logging
+import time
 import structlog
 
 logger = structlog.get_logger()
