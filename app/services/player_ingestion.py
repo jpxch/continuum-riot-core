@@ -13,12 +13,12 @@ async def fetch_match_ids(puuid: str, count: int = 50) -> List[str]:
         "X-Riot-Token": settings.RIOT_API_KEY
     }
 
-    all matches = []
+    all_matches = []
     start = 0
     batch_size = 10
 
     async with httpx.AsyncClient() as client:
-        while len(all matches) < total:
+        while len(all_matches) < total:
             params = {
                 "start": start,
                 "count": batch_size
@@ -33,7 +33,7 @@ async def fetch_match_ids(puuid: str, count: int = 50) -> List[str]:
             if not batch:
                 break
 
-            all matches.extend(batch)
+            all_matches.extend(batch)
             start += batch_size
 
     return all_matches[:total]
