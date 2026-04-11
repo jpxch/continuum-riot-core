@@ -27,8 +27,8 @@ This file is the source-of-truth context for ongoing ChatGPT/Codex sessions.
 Validated from the repo and current working tree on 2026-04-10 unless otherwise noted. Boundary and git-status notes were refreshed on 2026-04-11:
 
 - Active branch is `feature/player-ingestion`.
-- `git log -1 --oneline` reports `149f8ff` (`fix: correct typo in game mode key in transform_match function`).
-- `git status --short --untracked-files=all` shows `.gitignore` modified and `ROADMAP.md` now visible as untracked.
+- `git log -1 --oneline` reports `bc2d028` (`refactor: remove player and match ingestion prototype files and update architecture documentation`).
+- `git status --short --untracked-files=all` shows `.gitignore` and `ROADMAP.md` modified.
 - `.env.example` exists and the repo still expects the baseline env vars (`DATABASE_URL`, `DATABASE_URL_SYNC`, `RIOT_API_KEY`, service/API settings).
 - `app/api/response.py` now wraps both success and error payloads with a top-level `status` field.
 - Route wiring still exposes the implemented API under the `/v1` prefix.
@@ -51,10 +51,10 @@ Validated from the repo and current working tree on 2026-04-10 unless otherwise 
   - `tests/test_mode_manifest.py`
   - `tests/test_static_ingestion.py`
 - Dedicated endpoint tests exist for the `/v1/jobs/*` read surface in `tests/test_jobs.py`.
-- `docs/api.md` still does not document the `/v1/jobs/*` endpoints, so the observability surface is implemented before its consumer-facing contract doc.
-- `app/api/v1/jobs.py` still raises plain-string `HTTPException.detail` values for validation and not-found cases, so jobs responses are not yet aligned with the `{code, message}` detail shape used by the static and mode routes.
-- `/v1/jobs/recent` currently caps `limit` at `100` and validates `offset`, `status`, and `job_type`, but `/v1/jobs/latest` still accepts an unvalidated `job_type` query parameter.
-- The `ddragon` response-helper typo is fixed in code: `app/api/v1/ddragon.py` now imports and calls `success_response`.
+- `docs/api.md` documents the `/v1/jobs/*` endpoints as the current ingestion observability surface.
+- `app/api/v1/jobs.py` now uses structured `{code, message}` `HTTPException.detail` values for validation and not-found cases.
+- `/v1/jobs/recent`, `/v1/jobs/latest`, `/v1/jobs/summary`, and `/v1/jobs/failures` validate the current `job_type` allowlist.
+- The `ddragon` response-helper typo is fixed in code: `app/api/v1/ddragon.py` uses the shared `contract_response` wrapper.
 - Mini workspace verification is green again on 2026-03-29: `pytest` reports `11 passed, 1 warning in 0.24s` from `/mnt/continuum/Projects/continuum-riot-core` on `continuum-mini`.
 - Mini host import verification is green on 2026-04-10: `python -c 'import app.main; print("import ok")'` succeeds.
 - Alembic migration verification is green on `continuum-mini` on 2026-04-10: `alembic upgrade head` completes without error against Postgres.
@@ -124,8 +124,8 @@ Current sync path is both request-triggered (`POST /v1/ddragon/sync`) and lifecy
 Current git status:
 
 - Active branch: `feature/player-ingestion`
-- Working tree: dirty for this roadmap update, `.gitignore` cleanup, and prototype quarantine.
-- Latest commit before this roadmap refresh: `149f8ff` (`fix: correct typo in game mode key in transform_match function`)
+- Working tree: dirty for this roadmap update and `.gitignore` cleanup.
+- Latest commit before this roadmap refresh: `bc2d028` (`refactor: remove player and match ingestion prototype files and update architecture documentation`)
 
 Required direction:
 
@@ -483,8 +483,7 @@ If a future phase changes focus, update this section along with the roadmap phas
 
 ## Open Risks
 
-- Docs and roadmap now reflect the current Mini response shape and verification baseline, but `docs/api.md` still needs a follow-up pass for the jobs endpoints and any error-shape cleanup.
-- `docs/architecture.md` still has stale player/match and test-hang wording; update it after the prototype quarantine decision is made.
+- Docs and roadmap now reflect the current Mini response shape, jobs endpoint coverage, and player/match boundary reset.
 - `continuum-mini` is still the deployment target, and `/v1/health`, `/v1/version`, and `POST /v1/ddragon/sync` are green.
 - Live DB migration validation is not freshly re-confirmed in this session.
 - This session produced a fresh local `pytest` baseline: `TMPDIR=/dev/shm .venv/bin/pytest -vv` reports `35 passed, 1 warning in 0.31s`.
