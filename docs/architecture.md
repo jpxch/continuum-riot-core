@@ -56,7 +56,7 @@ Primary runtime target is `continuum-mini` at `192.168.0.74`.
 ## Current Gaps
 
 - Patch poller baseline exists, but richer observability and lifecycle controls are still missing.
-- No player identity/match ingestion pipeline yet.
-- Live Postgres migration validation is still blocked by current DB connectivity issues.
-- Classifier tests run, but mode API tests currently hang in the dev harness.
+- Player identity/match ingestion is intentionally deferred until the DB-backed authority model is designed.
+- Live Postgres migration validation should be rechecked when migration or deployment posture changes.
+- Mode API tests were rechecked locally in the roadmap refresh and no longer hang in the dev harness.
 - Mini deployment is currently healthy under `continuum-riot-core.service` and serves on port `8000`.

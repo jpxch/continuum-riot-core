@@ -6,7 +6,6 @@ import uuid
 from contextvars import ContextVar
 
 import structlog
-from pythonjsonlogger import jsonlogger
 
 _request_id: ContextVar[str | None] = ContextVar("request_id", default=None)
 

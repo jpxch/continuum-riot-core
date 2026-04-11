@@ -8,7 +8,6 @@ from app.api.contract import contract_response
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.patch import PatchRegistry
-from app.api.response import success_response
 
 router = APIRouter()
 

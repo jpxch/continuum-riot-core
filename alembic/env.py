@@ -7,9 +7,13 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import settings
 from app.models.base import Base
+from app.models import asset as asset_models
+from app.models import job_run as job_run_models
+from app.models import mode as mode_models
+from app.models import patch as patch_models
 
-from app.models.patch import PatchRegistry
-from app.models.asset import AssetRegistry
+# Import model modules so Alembic autogenerate sees the full metadata set.
+assert asset_models and job_run_models and mode_models and patch_models
 
 
 config = context.config
