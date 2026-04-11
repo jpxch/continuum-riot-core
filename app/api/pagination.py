@@ -44,4 +44,4 @@ def paginate_result(
 
     )
 
-    return items, meta
+    return items, meta # meta = pagination

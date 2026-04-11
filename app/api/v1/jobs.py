@@ -17,6 +17,26 @@ VALID_STATUSES = {"success", "failed", "running"}
 VALID_JOB_TYPES = {"ddragon_sync"}
 
 
+def validate_job_type(job_type: Optional[str]):
+    if job_type and job_type not in VALID_JOB_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "invalid_job_type",
+                "message": f"Invalid job_type. Must be one of {sorted(VALID_JOB_TYPES)}",
+            },
+        )
+
+def validate_status(job_status: Optional[str]):
+    if job_status and job_status not in VALID_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "invalid_status",
+                "message": f"Invalid status. Must be one of {sorted(VALID_STATUSES)}",
+            },
+        )
+
 @router.get("/jobs/recent")
 @contract_response
 async def get_recent_jobs(
@@ -28,34 +48,27 @@ async def get_recent_jobs(
     db: AsyncSession = Depends(get_db),
 ):
     if limit > MAX_LIMIT:
-        limit = MAX_LIMIT
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "invalid_limit",
+                "message": f"limit must be <= {MAX_LIMIT}",
+            }
+        )
 
     if offset < 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
-                "code": "INVALID_OFFSET",
+                "code": "invalid_offset",
                 "message": "offset must be >= 0",
             },
         )
 
-    if job_status and job_status not in VALID_STATUSES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "INVALID_STATUS",
-                "message": f"Invalid status. Must be one of {sorted(VALID_STATUSES)}",
-            },
-        )
+    validate_status(job_status)
 
-    if job_type and job_type not in VALID_JOB_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "INVALID_JOB_TYPE",
-                "message": f"Invalid job_type. Must be one of {sorted(VALID_JOB_TYPES)}",
-            },
-        )
+    validate_job_type(job_type)
+
 
     query = select(JobRunRegistry)
 
@@ -104,7 +117,7 @@ async def get_recent_jobs(
             }
         )
 
-    data, meta = paginate_result(
+    data, pagination = paginate_result(
         items=data,
         total=total,
         limit=limit,
@@ -114,7 +127,9 @@ async def get_recent_jobs(
 
     return {
         "__data__": data,
-        "__meta__": meta,
+        "__meta__": {
+            "pagination": pagination
+        }
     }
 
 
@@ -122,14 +137,14 @@ async def get_recent_jobs(
 @contract_response
 async def get_latest_job(
     request: Request,
-    job_type: str,
+    job_type: str = Query(...),
     db: AsyncSession = Depends(get_db),
 ):
     if job_type not in VALID_JOB_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
-                "code": "INVALID_JOB_TYPE",
+                "code": "invalid_job_type",
                 "message": f"Invalid job_type. Must be one of {sorted(VALID_JOB_TYPES)}",
             },
         )
@@ -147,7 +162,7 @@ async def get_latest_job(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={
-                "code": "JOB_NOT_FOUND",
+                "code": "job_not_found",
                 "message": f"No job found for job_type '{job_type}'.",
             },
         )
@@ -179,14 +194,7 @@ async def get_jobs_summary(
     job_type: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
 ):
-    if job_type and job_type not in VALID_JOB_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "INVALID_JOB_TYPE",
-                "message": f"Invalid job_type. Must be one of {sorted(VALID_JOB_TYPES)}",
-            },
-        )
+    validate_job_type(job_type)
 
     summary_query = select(
         func.count().label("total"),
@@ -228,14 +236,7 @@ async def get_job_failures(
 ):
     from sqlalchemy import func
 
-    if job_type and job_type not in VALID_JOB_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "INVALID_JOB_TYPE",
-                "message": f"Invalid job_type. Must be one of {sorted(VALID_JOB_TYPES)}",
-            },
-        )
+    validate_job_type(job_type)
 
     query = select(
         JobRunRegistry.error_message,
@@ -288,7 +289,7 @@ async def get_job_by_id(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={
-                "code": "JOB_NOT_FOUND",
+                "code": "job_not_found",
                 "message": f"Job '{job_id}' does not exist.",
             },
         )

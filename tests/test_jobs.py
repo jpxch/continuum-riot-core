@@ -14,9 +14,12 @@ async def test_recent_jobs_empty(client):
 
     assert body["status"] == "success"
     assert body["data"] == []
-    assert body["meta"]["total"] == 0
-    assert body["meta"]["limit"] == 10
-    assert body["meta"]["offset"] == 0
+
+    pagination = body["meta"]["pagination"]
+
+    assert pagination["total"] == 0
+    assert pagination["limit"] == 10
+    assert pagination["offset"] == 0
 
 
 async def test_recent_jobs_with_data(client, db_session):
@@ -39,7 +42,8 @@ async def test_recent_jobs_with_data(client, db_session):
     assert body["status"] == "success"
     assert len(body["data"]) == 1
     assert body["data"][0]["job_type"] == "ddragon_sync"
-    assert body["meta"]["total"] == 1
+    pagination = body["meta"]["pagination"]
+    assert pagination["total"] == 1
 
 
 async def test_recent_jobs_invalid_status(client):
@@ -49,7 +53,7 @@ async def test_recent_jobs_invalid_status(client):
 
     body = response.json()
     assert body["status"] == "error"
-    assert body["error"]["code"] == "INVALID_STATUS"
+    assert body["error"]["code"] == "invalid_status"
     assert "Invalid status" in body["error"]["message"]
 
 
@@ -60,7 +64,7 @@ async def test_recent_jobs_invalid_offset(client):
 
     body = response.json()
     assert body["status"] == "error"
-    assert body["error"]["code"] == "INVALID_OFFSET"
+    assert body["error"]["code"] == "invalid_offset"
     assert body["error"]["message"] == "offset must be >= 0"
 
 
@@ -71,7 +75,7 @@ async def test_recent_jobs_invalid_job_type(client):
 
     body = response.json()
     assert body["status"] == "error"
-    assert body["error"]["code"] == "INVALID_JOB_TYPE"
+    assert body["error"]["code"] == "invalid_job_type"
     assert "Invalid job_type" in body["error"]["message"]
 
 
@@ -103,7 +107,7 @@ async def test_latest_job_not_found(client):
 
     body = response.json()
     assert body["status"] == "error"
-    assert body["error"]["code"] == "JOB_NOT_FOUND"
+    assert body["error"]["code"] == "job_not_found"
     assert body["error"]["message"] == "No job found for job_type 'ddragon_sync'."
 
 
@@ -114,7 +118,7 @@ async def test_latest_job_invalid_job_type(client):
 
     body = response.json()
     assert body["status"] == "error"
-    assert body["error"]["code"] == "INVALID_JOB_TYPE"
+    assert body["error"]["code"] == "invalid_job_type"
     assert "Invalid job_type" in body["error"]["message"]
 
 async def test_get_job_by_id(client, db_session):
@@ -147,7 +151,7 @@ async def test_get_job_by_id_not_found(client):
 
     body = response.json()
     assert body["status"] == "error"
-    assert body["error"]["code"] == "JOB_NOT_FOUND"
+    assert body["error"]["code"] == "job_not_found"
     assert body["error"]["message"] == f"Job '{fake_id}' does not exist."
 
 
@@ -252,7 +256,7 @@ async def test_job_summary_invalid_job_type(client):
     body = response.json()
 
     assert body["status"] == "error"
-    assert body["error"]["code"] == "INVALID_JOB_TYPE"
+    assert body["error"]["code"] == "invalid_job_type"
 
 
 async def test_job_summary_filters_by_job_type(client, db_session):
@@ -345,4 +349,46 @@ async def test_job_failures_invalid_job_type(client):
     body = response.json()
 
     assert body["status"] == "error"
-    assert body["error"]["code"] == "INVALID_JOB_TYPE"
+    assert body["error"]["code"] == "invalid_job_type"
+
+
+async def test_recent_jobs_limit_too_high(client):
+    response = await client.get("/v1/jobs/recent?limit=999")
+
+    assert response.status_code == 400
+
+    body = response.json()
+
+    assert body["status"] == "error"
+    assert body["error"]["code"] == "invalid_limit"
+
+
+async def test_recent_jobs_filter_status(client, db_session):
+    from datetime import datetime, timezone
+
+    jobs = [
+        JobRunRegistry(
+            job_type="ddragon_sync",
+            status="success",
+            started_at=datetime.now(timezone.utc),
+            created_at=datetime.now(timezone.utc),
+        ),
+
+        JobRunRegistry(
+            job_type="ddragon_sync",
+            status="failed",
+            started_at=datetime.now(timezone.utc),
+            created_at=datetime.now(timezone.utc),
+
+        ),
+    ]
+
+    db_session.add_all(jobs)
+    await db_session.commit()
+
+    response = await client.get("/v1/jobs/recent?status=success")
+
+    body = response.json()
+
+    assert len(body["data"]) == 1
+    assert body["data"][0]["status"] == "success"

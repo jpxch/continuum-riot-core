@@ -46,6 +46,8 @@ async def test_pagination_contract(client):
 
     meta = body["meta"]
 
-    assert "limit" in meta
-    assert "offset" in meta
-    assert "total" in meta
+    assert "pagination" in meta
+    pagination = meta["pagination"]
+    assert "limit" in pagination
+    assert "offset" in pagination
+    assert "total" in pagination
