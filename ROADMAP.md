@@ -24,15 +24,17 @@ This file is the source-of-truth context for ongoing ChatGPT/Codex sessions.
 
 ## Verified Status Snapshot
 
-Validated from the repo and current working tree on 2026-04-10 unless otherwise noted. Boundary and git-status notes were refreshed on 2026-04-11:
+Validated from the repo and current working tree on 2026-04-11:
 
 - Active branch is `feature/player-ingestion`.
-- `git log -1 --oneline` reports `bc2d028` (`refactor: remove player and match ingestion prototype files and update architecture documentation`).
-- `git status --short --untracked-files=all` shows `.gitignore` and `ROADMAP.md` modified.
+- `git log -1 --oneline` reports `7bbac45` (`feat: add job type and status validation, update pagination structure in responses`).
+- `git status --short --untracked-files=all` was clean before this roadmap refresh; this edit dirties `ROADMAP.md`.
 - `.env.example` exists and the repo still expects the baseline env vars (`DATABASE_URL`, `DATABASE_URL_SYNC`, `RIOT_API_KEY`, service/API settings).
 - `app/api/response.py` now wraps both success and error payloads with a top-level `status` field.
+- `app/api/contract.py` provides the endpoint response wrapper used by the newer contract-shaped routes.
+- `app/api/pagination.py` provides the shared pagination metadata helper used by `/v1/jobs/recent`.
 - Route wiring still exposes the implemented API under the `/v1` prefix.
-- Route wiring also includes the jobs router, so `/v1/jobs/recent`, `/v1/jobs/latest`, and `/v1/jobs/{job_id}` are live in the repo API surface.
+- Route wiring also includes the jobs router, so `/v1/jobs/recent`, `/v1/jobs/latest`, `/v1/jobs/summary`, `/v1/jobs/failures`, and `/v1/jobs/{job_id}` are live in the repo API surface.
 - The prototype players router has been removed from stable `/v1` route wiring; player/match authority work is deferred until it is backed by persisted player/match records.
 - `app/api/router.py` remains the concrete source of route composition for the `/v1` surface.
 - `app/main.py` still starts the patch poller from FastAPI lifespan when `ENABLE_PATCH_POLLER` is enabled.
@@ -50,8 +52,9 @@ Validated from the repo and current working tree on 2026-04-10 unless otherwise 
   - `tests/test_modes_read.py`
   - `tests/test_mode_manifest.py`
   - `tests/test_static_ingestion.py`
-- Dedicated endpoint tests exist for the `/v1/jobs/*` read surface in `tests/test_jobs.py`.
-- `docs/api.md` documents the `/v1/jobs/*` endpoints as the current ingestion observability surface.
+- Dedicated endpoint tests exist for the `/v1/jobs/*` read surface in `tests/test_jobs.py`, including recent/latest/by-id/summary/failures and validation cases.
+- `tests/test_contract.py` covers the current success envelope, error envelope, and pagination metadata contract.
+- `docs/api.md` documents the `/v1/jobs/*` endpoints as the current ingestion observability surface, though the `/v1/jobs/recent` pagination wording still needs a small nested-`meta.pagination` pass before treating the docs as frozen.
 - `app/api/v1/jobs.py` now uses structured `{code, message}` `HTTPException.detail` values for validation and not-found cases.
 - `/v1/jobs/recent`, `/v1/jobs/latest`, `/v1/jobs/summary`, and `/v1/jobs/failures` validate the current `job_type` allowlist.
 - The `ddragon` response-helper typo is fixed in code: `app/api/v1/ddragon.py` uses the shared `contract_response` wrapper.
@@ -70,12 +73,12 @@ Validated from the repo and current working tree on 2026-04-10 unless otherwise 
   - root cause was `summarize_results()` using a type annotation instead of assigning a dict
   - the fix is committed locally in `70acfdd`
   - Mini service restart and live post-fix smoke verification both completed successfully
-- Local `pytest` in this environment still uses `TMPDIR=/dev/shm` to avoid an initial temp-directory startup failure.
+- Earlier local checks used `TMPDIR=/dev/shm` to avoid an initial temp-directory startup failure, but the 2026-04-11 full-suite run succeeded without that workaround in this workspace.
 - Local verification on 2026-04-10 (non-mode slice): `TMPDIR=/dev/shm .venv/bin/pytest -q tests/test_http_client.py tests/test_mode_classifier.py tests/test_static_ingestion.py` reports `10 passed, 1 warning in 0.09s`.
 - Local verification on 2026-04-10 (mode slice): `TMPDIR=/dev/shm .venv/bin/pytest -q tests/test_modes_read.py` reports `2 passed, 1 warning in 0.31s` and `TMPDIR=/dev/shm .venv/bin/pytest -q tests/test_mode_manifest.py` reports `2 passed, 1 warning in 0.24s`.
-- Local full-suite verification is green on 2026-04-10 with that workaround: `TMPDIR=/dev/shm .venv/bin/pytest -vv` reports `35 passed, 1 warning in 0.31s`.
+- Local full-suite verification is green on 2026-04-11 without the prior `TMPDIR` workaround in this workspace: `.venv/bin/pytest -q` reports `37 passed in 0.38s`.
 - The stale `pythonjsonlogger.jsonlogger` import has been removed from `app/core/logging.py`.
-- `continuum-mini` remains the primary deployment target. The remaining runtime gaps are telemetry depth and broader contract hardening rather than startup/import health.
+- `continuum-mini` remains the primary deployment target. The remaining runtime gaps are telemetry depth, rate-limit/routing policy, and broader deployment verification freshness rather than startup/import health.
 
 Implemented APIs:
 
@@ -91,6 +94,8 @@ Implemented APIs:
 - `GET /v1/modes/{mode_key}/manifest`
 - `GET /v1/jobs/recent`
 - `GET /v1/jobs/latest`
+- `GET /v1/jobs/summary`
+- `GET /v1/jobs/failures`
 - `GET /v1/jobs/{job_id}`
 
 Implemented core services:
@@ -117,21 +122,21 @@ Implemented core services:
   - `app/services/http_client.py`
   - `app/core/config.py`
 
-Current sync path is both request-triggered (`POST /v1/ddragon/sync`) and lifecycle-driven: the app starts a background patch poller on FastAPI lifespan startup via `app/services/patch_poller.py`. The previously noted `ddragon` import typo is now fixed, the Mini workspace `pytest` baseline is green again, the host-local `/v1/health` plus `/v1/version` checks are green on `continuum-mini`, and `POST /v1/ddragon/sync` smoke verification now returns the same success envelope shape as the local code with a matching `Mode authority sync complete` log entry. The repo also now exposes DB-backed job history endpoints for recent/latest/by-id sync outcomes, but those surfaces still need docs, endpoint tests, and consistent error-shape hardening before they can be treated as a stable consumer contract. Treat observability and contract hardening as the immediate stabilization sequence.
+Current sync path is both request-triggered (`POST /v1/ddragon/sync`) and lifecycle-driven: the app starts a background patch poller on FastAPI lifespan startup via `app/services/patch_poller.py`. The previously noted `ddragon` import typo is now fixed, the Mini workspace `pytest` baseline is green again, the host-local `/v1/health` plus `/v1/version` checks are green on `continuum-mini`, and `POST /v1/ddragon/sync` smoke verification now returns the same success envelope shape as the local code with a matching `Mode authority sync complete` log entry. The repo now exposes DB-backed job history endpoints for recent/latest/by-id sync outcomes plus summary and grouped-failure observability. The jobs endpoints have docs and tests, and contract tests now pin the success/error/pagination envelope baseline; treat deeper telemetry, rate-limit visibility, and broader sync-path coverage as the immediate stabilization sequence.
 
 ## Git Status And Direction
 
 Current git status:
 
 - Active branch: `feature/player-ingestion`
-- Working tree: dirty for this roadmap update and `.gitignore` cleanup.
-- Latest commit before this roadmap refresh: `bc2d028` (`refactor: remove player and match ingestion prototype files and update architecture documentation`)
+- Working tree: clean before this roadmap update; dirty only because this file is being refreshed.
+- Latest commit before this roadmap refresh: `7bbac45` (`feat: add job type and status validation, update pagination structure in responses`)
 
 Required direction:
 
-1. Add ingestion observability beyond the current poller baseline (job telemetry, error surfacing, health visibility).
-2. Document and test the existing `/v1/jobs/*` observability surfaces before widening telemetry further.
-3. Define Phase 4 consumer contracts (versioning, pagination, error semantics) before starting the player/match foundation phases.
+1. Add ingestion observability beyond the current jobs baseline (telemetry counters, retry/rate-limit surfacing, health visibility).
+2. Tighten the Phase 4 consumer contract baseline now that jobs pagination and envelope tests exist.
+3. Define Phase 6A/6B persistence and job contracts before reintroducing player/match API surfaces.
 4. Expand sync-path verification from smoke-level success to repeatable contract/idempotency coverage.
 
 ## Boundary Reset (2026-04-11)
@@ -159,17 +164,17 @@ Preferred correction:
 | Phase | Name | Status | Notes |
 |---|---|---|---|
 | 0 | Foundation | In Progress | Core app, DB lifecycle, and migration chain are in place. Mini verification is improved again: the `ddragon` import typo is fixed, `pytest` is green in the Mini workspace, host-local `/v1/health` plus `/v1/version` checks are green, and `alembic upgrade head` is green on Mini. |
-| 1 | Riot Access & Compliance | In Progress | Shared HTTP retry/backoff/timeout settings and client helpers exist, and the queue catalog uses the shared client baseline. Basic job outcome visibility now exists through `job_run_registry` plus `/v1/jobs/*`, but rate-limit strategy, routing policy, secret hygiene, validation consistency, and richer telemetry are still open. |
-| 2 | Patch & Static Data Authority | In Progress | Ingestion + read endpoints are implemented, a patch poller baseline runs on app startup, and `POST /v1/ddragon/sync` is now green on `continuum-mini` through both the HTTP envelope and the recorded `job_run_registry` success outcome. Recent/latest/by-id job status is queryable through the API, so the next confidence step is docs/tests, consistent endpoint behavior, and broader sync-path coverage. |
-| 3 | Mode Authority Core | In Progress | Mode schema/models, read APIs, and bootstrap/discovery write workflow are implemented, and the earlier `ddragon` import regression is fixed. The mode API test files were rechecked locally in this refresh and no longer hang, but the full-suite baseline still needs a unified re-run. |
-| 4 | Consumer Integration Contracts | In Progress | Shared success/error helpers exist, and `/v1/jobs/recent` now returns pagination metadata while validating `offset`, `status`, and `job_type` and capping `limit` at `100`. Cross-endpoint error, validation, pagination, and deprecation rules are still not standardized enough to treat this phase as complete. |
+| 1 | Riot Access & Compliance | In Progress | Shared HTTP retry/backoff/timeout settings and client helpers exist, and the queue catalog uses the shared client baseline. Basic job outcome visibility now exists through `job_run_registry` plus `/v1/jobs/*`, but rate-limit strategy, routing policy, secret hygiene, and richer telemetry are still open. |
+| 2 | Patch & Static Data Authority | In Progress | Ingestion + read endpoints are implemented, a patch poller baseline runs on app startup, and `POST /v1/ddragon/sync` is green on `continuum-mini` through both the HTTP envelope and the recorded `job_run_registry` success outcome. Recent/latest/by-id job status plus summary/failure observability are queryable through the API; the next confidence step is broader sync-path and idempotency coverage. |
+| 3 | Mode Authority Core | In Progress | Mode schema/models, read APIs, and bootstrap/discovery write workflow are implemented, and the earlier `ddragon` import regression is fixed. The mode API test files were rechecked locally in the prior refresh and the full local suite is green on 2026-04-11. |
+| 4 | Consumer Integration Contracts | In Progress | Shared success/error helpers exist, `/v1/jobs/recent` now returns nested pagination metadata, and `tests/test_contract.py` covers success, error, and pagination envelope basics. Cross-endpoint versioning, deprecation rules, and list semantics are still not standardized enough to treat this phase as complete. |
 | 5 | Mode Projection Layer | Not Started | Only base mode listing/manifest endpoints exist; no advanced per-mode projection surfaces yet. |
 | 6A | Player Identity Foundation | Deferred | The prototype `POST /v1/players/{puuid}/sync` route has been removed from the stable API. Next work should start with Riot account/PUUID/summoner persistence, job orchestration, and a DB-backed read contract. |
 | 6B | Match Ingestion Foundation | Deferred | The early Riot match fetch/transform prototype files have been removed. Next work should start with durable cursoring, a match registry, stored payload/snapshot model, and ingestion job lifecycle. |
 | 7 | Player Match Normalization Authority | Not Started | No DB-backed normalized per-match champion/item/rune/spell snapshots are exposed for consumers yet. |
 | 8 | Patch & Seasonal Lifecycle Automation | In Progress | Patch poller baseline is implemented. Patch discovery and manual sync smoke both appear healthy on `continuum-mini`, including successful job-run completion after the 2026-03-30 summary regression fix; the next meaningful check is better operational visibility. |
-| 9 | Testing & Data Quality Gate | In Progress | The Mini workspace `pytest` baseline is green again (`11 passed, 1 warning`), and direct regression coverage now exists for static-ingestion result summarization. Local re-checks in this sandbox are green with `TMPDIR=/dev/shm`, and dedicated jobs-endpoint coverage is now present. |
-| 10 | Hardening & Production Discipline | In Progress | Logging and the Mini deployment target are established, and host-local `/v1/health` plus `/v1/version` are green. Operational confidence still needs docs alignment, broader smoke coverage, and deployment/runtime verification notes to stay current. |
+| 9 | Testing & Data Quality Gate | In Progress | The Mini workspace `pytest` baseline is green again (`11 passed, 1 warning`), and direct regression coverage now exists for static-ingestion result summarization. The local full suite is green on 2026-04-11 with `37 passed`, and dedicated jobs plus contract coverage is now present. |
+| 10 | Hardening & Production Discipline | In Progress | Logging and the Mini deployment target are established, and host-local `/v1/health` plus `/v1/version` are green. Operational confidence still needs broader smoke coverage, rate-limit/routing policy, and deployment/runtime verification notes to stay current. |
 | 11 | Advanced Intelligence | Out of Scope for Core | Riot-core does not need an intelligence phase to serve as the data authority. Recommendation/classification/advice work should live in SoulRift or a separate intelligence service unless narrowed to factual data-quality enrichment. |
 
 ## Next Milestone Checklist
@@ -177,13 +182,15 @@ Preferred correction:
 ### Suggested Immediate Next Step
 
 - [x] Reconcile roadmap status with the current repo branch/commit and implemented API surface.
-- [x] Record the existing `/v1/jobs/recent`, `/v1/jobs/latest`, and `/v1/jobs/{job_id}` observability endpoints as part of the current authority surface.
+- [x] Record the existing `/v1/jobs/recent`, `/v1/jobs/latest`, `/v1/jobs/summary`, `/v1/jobs/failures`, and `/v1/jobs/{job_id}` observability endpoints as part of the current authority surface.
 - [x] Re-run the non-mode pytest slice locally with `TMPDIR=/dev/shm` and record the current result (`10 passed, 1 warning in 0.09s`).
+- [x] Re-run the full local pytest suite on 2026-04-11 and record the current result (`37 passed in 0.38s`).
 - [x] Unstick `tests/test_modes_read.py` and `tests/test_mode_manifest.py` so the full local suite no longer hangs (rechecked on 2026-04-10).
-- [x] Add dedicated tests for the jobs endpoints, including filter validation and response metadata expectations.
-- [ ] Document the jobs endpoints in `docs/api.md` and note how they should be used for ingestion visibility.
-- [ ] Normalize jobs endpoint error payloads so they follow the same `{code, message}` detail pattern used by the static and mode routes.
-- [ ] Align jobs endpoint validation behavior across `/v1/jobs/recent` and `/v1/jobs/latest` so the observability contract is consistent.
+- [x] Add dedicated tests for the jobs endpoints, including filter validation, summary/failure views, and response metadata expectations.
+- [x] Document the jobs endpoints in `docs/api.md` and note how they should be used for ingestion visibility.
+- [x] Normalize jobs endpoint error payloads so they follow the same `{code, message}` detail pattern used by the static and mode routes.
+- [x] Align jobs endpoint validation behavior across `/v1/jobs/recent`, `/v1/jobs/latest`, `/v1/jobs/summary`, and `/v1/jobs/failures` so the observability contract is consistent.
+- [ ] Add deeper ingestion telemetry beyond persisted job outcomes: counters, retry/rate-limit visibility, and health-rollup behavior.
 
 ### Phase 1 Kickoff (Riot Access & Compliance)
 
@@ -193,7 +200,8 @@ Preferred correction:
 - [ ] Add region/platform routing policy (`americas`, `asia`, `europe`, platform shards)
 - [ ] Enforce secret hygiene (`RIOT_API_KEY` env-only, log redaction, no key echo in errors)
 - [x] Expose recent/latest/by-id ingestion job outcomes through `/v1/jobs/*`
-- [ ] Add basic ingestion telemetry counters (success/failure/retry/ratelimited)
+- [x] Expose summary and grouped-failure ingestion observability through `/v1/jobs/summary` and `/v1/jobs/failures`
+- [ ] Add basic ingestion telemetry counters (success/failure/retry/ratelimited) beyond persisted job rows
 - [x] Re-verify the current shared HTTP client implementation in code
 
 ### Phase 2 Closure (Patch & Static Data Authority)
@@ -207,10 +215,11 @@ Preferred correction:
 - [x] Ensure failed asset downloads fail the sync job/poller outcome instead of being reported as success
 - [x] Repair the `ddragon` route import/response-helper regression so sync endpoints load again
 - [x] Expose recent/latest/by-id sync job status from `job_run_registry`
-- [ ] Add ingestion status tracking/telemetry for background task outcomes
+- [x] Expose summary/failure sync job observability from `job_run_registry`
+- [ ] Add ingestion status tracking/telemetry for background task outcomes beyond the current job history API
 - [x] Re-verify background sync end-to-end on `continuum-mini` after the current docs/verification refresh
 - [ ] Add broader direct tests for static ingestion and sync failure paths beyond the current summary regression coverage
-- [ ] Add docs and endpoint tests for `/v1/jobs/*`
+- [x] Add docs and endpoint tests for `/v1/jobs/*`
 
 ### Phase 3 Stabilization (Mode Authority Core)
 
@@ -227,10 +236,11 @@ Preferred correction:
 ### Phase 4 Kickoff (Consumer Integration Contracts)
 
 - [ ] Define versioned API contract policy (`/v1` compatibility and breaking-change rules)
-- [ ] Standardize envelope for errors/pagination/metadata across read endpoints
+- [x] Add baseline contract tests for success envelope, error envelope, and pagination metadata
+- [ ] Standardize envelope for errors/pagination/metadata across all read endpoints
 - [x] Add an initial paginated list surface with validation metadata on `/v1/jobs/recent`
 - [ ] Define canonical filters/sort/pagination semantics for list endpoints
-- [ ] Publish first contract doc for consumers (`modes`, `patch`, `player matches`, `jobs`)
+- [ ] Publish first complete contract doc for consumers (`modes`, `patch`, future player matches, `jobs`)
 
 ### Phase 6A Kickoff (Player Identity Foundation)
 
@@ -253,8 +263,9 @@ Preferred correction:
 - [x] Re-run the local non-mode pytest slice with `TMPDIR=/dev/shm` and record the current result
 - [x] Add retry/error-path tests for the shared HTTP client
 - [x] Resolve the local timeout/hang in `tests/test_modes_read.py` and `tests/test_mode_manifest.py`
-- [x] Add endpoint tests for `/v1/jobs/recent`, `/v1/jobs/latest`, and `/v1/jobs/{job_id}`
-- [ ] Contract tests for static/mode/player endpoints
+- [x] Add endpoint tests for `/v1/jobs/recent`, `/v1/jobs/latest`, `/v1/jobs/summary`, `/v1/jobs/failures`, and `/v1/jobs/{job_id}`
+- [x] Baseline envelope/pagination contract tests
+- [ ] Contract tests for static/mode/future-player endpoints
 - [ ] Idempotency tests for patch and player sync flows
 - [ ] Fixture replay tests using stored Riot payload samples
 - [x] Replace the stale failure narrative with the current Mini verification baseline in docs/roadmap
@@ -308,11 +319,10 @@ PR template checklist (copy into PR description):
 ## Immediate Build Order
 
 1. Define the Phase 6A/6B storage model before reintroducing player/match API surface.
-2. Document and test the existing `/v1/jobs/*` observability surface.
-3. Normalize error/pagination semantics across endpoints and define the Phase 4 contract baseline.
-4. Expand poller/ingestion observability beyond job history into counters, health visibility, and rate-limit surfacing.
-5. Add broader sync-path tests around failure handling and idempotency.
-6. Keep Mini deployment verification notes current when runtime fixes land outside the repo working tree.
+2. Tighten the Phase 4 contract baseline across read endpoints: versioning, pagination semantics, and deprecation policy.
+3. Expand poller/ingestion observability beyond job history into counters, health visibility, and rate-limit surfacing.
+4. Add broader sync-path tests around failure handling and idempotency.
+5. Keep Mini deployment verification notes current when runtime fixes land outside the repo working tree.
 
 ## Recommended Next Step
 
@@ -328,26 +338,25 @@ Execution focus:
 
 1. Define the Phase 6A/6B persistence model: `riot_account`, `summoner_profile`, `player_match_registry`, ingest cursor/state, raw match payload storage or references, and normalized match snapshots.
 2. Define the future `POST /v1/players/{puuid}/sync` and `GET /v1/players/{puuid}/matches` contracts around jobs and DB-backed reads.
-3. Keep `/v1/jobs/*` docs/error cleanup next in line, because job visibility will be needed by the eventual player/match sync path.
-4. Refresh verification notes after the stable app import/test baseline is re-run.
+3. Reuse the current `/v1/jobs/*` contract as the baseline for future job/readiness state while adding deeper telemetry separately.
+4. Refresh Mini verification notes after the next deployment-side app import/test/smoke baseline is re-run.
 
 ## Direction
 
 Near-term direction for the project:
 
-1. Reconcile docs, roadmap, and test verification notes so the repo tells one consistent story.
-2. Make the full pytest baseline consistent across local and Mini environments.
-3. Finish the current job-observability slice with tests, docs, and consistent errors.
-4. Add deeper observability around ingestion and patch polling.
-5. Validate deployment/migration posture and capture it in docs.
-6. Freeze consumer-facing contracts before starting player identity and match ingestion work.
+1. Freeze the Phase 4 consumer-facing contract rules before starting player identity and match ingestion work.
+2. Add deeper observability around ingestion and patch polling beyond the persisted jobs API.
+3. Add broader sync-path failure and idempotency tests.
+4. Validate deployment/migration posture and capture fresh Mini notes in docs.
+5. Define the Phase 6A/6B storage and job contract for DB-backed player/match authority.
 
 What not to do yet:
 
-- Do not start player ingest or match-history authority work before the static/sync and jobs-observability baselines are verifiably stable.
+- Do not start player ingest or match-history authority work before the static/sync contract and Phase 6 storage model are explicit.
 - Do not reintroduce player/match endpoints as a consumer contract until persistence, job status, and DB-backed read endpoints exist.
 - Do not add build recommendation or classification logic to riot-core's core service path.
-- Do not treat docs as authoritative until the jobs endpoints and response-shape verification notes are refreshed to match current code.
+- Do not treat the consumer contract as frozen until pagination, versioning, and deprecation rules are written down across all relevant read endpoints.
 
 ## Project Tree (Current)
 
@@ -483,10 +492,11 @@ If a future phase changes focus, update this section along with the roadmap phas
 
 ## Open Risks
 
-- Docs and roadmap now reflect the current Mini response shape, jobs endpoint coverage, and player/match boundary reset.
+- Roadmap now reflects the current Mini response shape, jobs endpoint coverage, and player/match boundary reset.
 - `continuum-mini` is still the deployment target, and `/v1/health`, `/v1/version`, and `POST /v1/ddragon/sync` are green.
 - Live DB migration validation is not freshly re-confirmed in this session.
-- This session produced a fresh local `pytest` baseline: `TMPDIR=/dev/shm .venv/bin/pytest -vv` reports `35 passed, 1 warning in 0.31s`.
+- This session produced a fresh local `pytest` baseline: `.venv/bin/pytest -q` reports `37 passed in 0.38s`.
+- `docs/api.md` covers the jobs endpoints, but its `/v1/jobs/recent` pagination wording should be rechecked against the current nested `meta.pagination` shape before treating the docs as frozen.
 - Locale drift risk exists when ingestion is triggered with a non-default locale while read paths are pinned to `DEFAULT_LOCALE`.
 - Riot rate-limit policy, secret redaction guarantees, and regional routing contracts are still not defined.
 - Contract drift risk remains high until pagination/error/versioning behavior is formally frozen.
