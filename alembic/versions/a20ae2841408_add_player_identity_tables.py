@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 
 # revision indentifiers, used by Alembic.
@@ -19,8 +20,6 @@ depends_on = None
 
 
 def upgrade() -> None:
-    from sqlalchemy.dialects import postgresql
-
     op.create_table(
         "riot_account",
         sa.Column("puuid", sa.String(length=100), primary_key=True),
