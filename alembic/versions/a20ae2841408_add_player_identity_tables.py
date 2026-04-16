@@ -65,18 +65,18 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
 )
 
-op.create_index(
-    "ix_summoner_profile_puuid_platform",
-    "summoner_profile",
-    ["puuid", "platform_region"],
-    unique=True,
-)
-
-
-def downgrade() -> None:
-    op.drop_index(
+    op.create_index(
         "ix_summoner_profile_puuid_platform",
-        table_name="summoner_profile"
+        "summoner_profile",
+        ["puuid", "platform_region"],
+        unique=True,
     )
-    op.drop_table("summoner_profile")
-    op.drop_table("riot_account")
+
+
+    def downgrade() -> None:
+        op.drop_index(
+            "ix_summoner_profile_puuid_platform",
+            table_name="summoner_profile"
+        )
+        op.drop_table("summoner_profile")
+        op.drop_table("riot_account")
