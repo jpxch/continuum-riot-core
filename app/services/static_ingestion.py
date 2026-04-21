@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Literal
 
@@ -40,6 +41,64 @@ STATIC_FILES: dict[AssetType, str] = {
 def _static_url(*, patch: str, locale: str, filename: str) -> str:
     return f"{settings.DDRAGON_BASE_URL}/cdn/{patch}/data/{locale}/{filename}"
 
+async def _process_asset_ingestion(
+    db: AsyncSessionLocal,
+    asset_type: AssetType,
+    patch: str,
+    locale: str,
+    filename: str,
+    url: str
+) -> AssetResult:
+    path = ddragon_asset_path(patch=patch, locale=locale, filename=filename)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        start = time.perf_counter()
+
+        stmt = (
+            select(AssetRegistry)
+            .where(AssetRegistry.patch == patch)
+            .where(AssetRegistry.locale == locale)
+            .where(AssetRegistry.asset_type == asset_type)
+            .where(AssetRegistry.filename == filename)
+        )
+
+        existing = (await db.execute(stmt)).scalar_one_or_none()
+
+        if existing and path.exists():
+            local_hash = sha256_file(path)
+            if local_hash == existing.sha256:
+                return AssetResult(asset_type, filename, "skipped")
+
+        data, content_type = await fetch_bytes(url)
+        new_hash = sha256_bytes(data)
+        size = len(data)
+        path.write_bytes(data)
+
+        if existing is None:
+            db.add(AssetRegistry(
+                patch=patch, asset_type=asset_type, locale=locale,
+                filename=filename, sha256=new_hash, file_size=size,
+                content_type=content_type,
+            ))
+            status = "new"
+        else:
+            existing.sha256 = new_hash
+            existing.file_size = size
+            existing.content_type = content_type
+            status = "updated"
+
+        await db.commit()
+
+        duration_ms = int((time.perf_counter() - start) * 1000)
+        logger.info("ddragon.asset.ingested", asset_type=asset_type.value, filename=filename, duration=duration_ms)
+
+        return AssetResult(asset_type, filename, status)
+
+    except Exception as e:
+        await db.rollback()
+        logger.error("ddragon.asset.failed", asset_type=asset_type.value, filename=filename, error=str(e))
+        return AssetResult(asset_type, filename, "failed", str(e))
 
 async def ingest_patch_static_data(*, patch: str, locale: str) -> list[AssetResult]:
     results: list[AssetResult] = []

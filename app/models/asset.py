@@ -20,6 +20,7 @@ from app.models.base import Base
 
 class AssetType(str, Enum):
     CHAMPION = "champion"
+    CHAMPION_LORE = "champion_lore"
     ITEM = "item"
     RUNE = "rune"
     SUMMONER = "summoner"
