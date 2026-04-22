@@ -9,6 +9,7 @@ from app.models.asset import AssetType
 from app.services.static_read import (
     get_current_patch,
     load_asset_json,
+    load_champion_lore_json,
     asset_exists,
     REQUIRED_ASSETS,
 )
@@ -16,53 +17,19 @@ from app.core.config import settings
 
 router = APIRouter()
 
-@router.get("/patch")
+@router.get("/champions/{champion_id}/lore")
 @contract_response
-async def read_patch(
-    request: Request,
-    session: AsyncSession = Depends(get_db),
-):
-    patch = await get_current_patch(session)
-    if not patch:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "NO_CURRENT_PATCH",
-                "message": "No current patch is registered.",
-            },
-        )
-
-    readiness = {}
-    for asset_type in REQUIRED_ASSETS.keys():
-        readiness[asset_type.value] = await asset_exists(
-            session,
-            patch,
-            asset_type,
-        )
-
-    return {
-        "__data__": {
-            "currentPatch": patch,
-            "locale": settings.DEFAULT_LOCALE,
-            "assets": readiness,
-        },
-        "__data_version__": patch,
-    }
-
-@router.get("/champions")
-@contract_response
-async def read_champions(
+async def read_champion_lore(
+    champion_id: str,
     request: Request,
     session: AsyncSession = Depends(get_db)
 ):
     try:
         patch = await get_current_patch(session)
-        data = await load_asset_json(session, AssetType.CHAMPION)
-
+        data = await load_champion_lore_json(session, champion_id)
         return {
             "__data__": data,
             "__data_version__": patch,
-
         }
     except RuntimeError as e:
         raise handle_runtime_error(e)
