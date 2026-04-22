@@ -6,7 +6,7 @@ from app.api.v1.health import router as health_router
 from app.api.v1.version import router as version_router
 from app.api.v1.ddragon import router as ddragon_router
 from app.api.v1.modes import router as modes_router
-from app.api.v1 import jobs, static
+from app.api.v1 import jobs, static, runeterra
 
 router = APIRouter(prefix="/v1")
 router.include_router(health_router, tags=["health"])
