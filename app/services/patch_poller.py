@@ -29,26 +29,6 @@ async def get_current_patch(db) -> str | None:
 async def poll_once() -> None:
     latest = await fetch_latest_patch()
 
-    try:
-        await set_current_patch(db, latest.latest)
-        result = await ingest_patch_static_data(
-            patch=latest.latest,
-            locale="en_US",
-        )
-
-        await sync_modes_for_patch(patch=latest.latest)
-
-        summary = summarize_results(result)
-        logger.info("Sync complete. Assets: %s", summary["total"])
-
-        await complete_job_success(
-            db,
-            job.id,
-            metadata={
-                "patch": latest.latest,
-                "assets": summary,
-            },
-        )
     async with AsyncSessionLocal() as db:
         current = await get_current_patch(db)
 
