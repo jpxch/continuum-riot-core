@@ -107,6 +107,51 @@ Behavior:
 - `409`: `ASSET_NOT_READY`
 - `500`: `FILE_MISSING` or `INVALID_JSON`
 
+#### `GET /v1/champions/{champion_id}/lore`
+
+- `200`: success envelope with the raw champion detail JSON from DDragon nested under `data`
+- `404`: `NO_CURRENT_PATCH`
+- `409`: `ASSET_NOT_READY`
+- `500`: `FILE_MISSING` or `INVALID_JSON`
+
+### Runeterra Lore
+
+The `runeterra` surface is a companion-friendly view over champion lore assets. Unlike the static endpoint above, these responses are normalized for browsing and reading rather than mirroring DDragon exactly.
+
+#### `GET /v1/runeterra/lore`
+
+- `200`: success envelope with `data[]` entries containing:
+  - `id`
+  - `key`
+  - `name`
+  - `title`
+  - `shortBio`
+  - `roles`
+  - `resource`
+  - `image`
+- `404`: `NO_CURRENT_PATCH`
+- `409`: `ASSET_NOT_READY`
+- `500`: `FILE_MISSING` or `INVALID_JSON`
+
+#### `GET /v1/runeterra/lore/{champion_id}`
+
+- `200`: success envelope with:
+  - `id`
+  - `key`
+  - `name`
+  - `title`
+  - `shortBio`
+  - `lore`
+  - `allyTips`
+  - `enemyTips`
+  - `roles`
+  - `resource`
+  - `image`
+- `404`: `NO_CURRENT_PATCH`
+- `404`: `CHAMPION_NOT_FOUND`
+- `409`: `ASSET_NOT_READY`
+- `500`: `FILE_MISSING` or `INVALID_JSON`
+
 ### Modes
 
 #### `GET /v1/modes`
