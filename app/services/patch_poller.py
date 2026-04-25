@@ -79,18 +79,22 @@ async def poll_once() -> None:
 
         await db.commit()
 
-async def poll_loop(interval_seconds: int) -> None:
-     while True:
+async def poll_loop(interval_seconds: int, retry_seconds: int) -> None:
+    while True:
+        sleep_seconds = interval_seconds
+
         try:
             await poll_once()
         except asyncio.CancelledError:
             raise
         except Exception:
             logger.exception("Patch poll failed")
+            sleep_seconds = retry_seconds
 
-        await asyncio.sleep(interval_seconds)
+        await asyncio.sleep(sleep_seconds)
 
 async def start_patch_poller() -> asyncio.Task:
     interval = settings.PATCH_POLL_INTERVAL_SECONDS
-    logger.info("Starting patch poller (interval=%ss)", interval)
-    return asyncio.create_task(poll_loop(interval))
+    retry = settings.PATCH_POLL_FAILURE_RETRY_SECONDS
+    logger.info("Starting patch poller (interval=%ss, retry=%ss)", interval, retry)
+    return asyncio.create_task(poll_loop(interval, retry))

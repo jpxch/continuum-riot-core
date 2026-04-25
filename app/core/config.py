@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     DDRAGON_DATA_DIR: str = "./data/ddragon"
 
     PATCH_POLL_INTERVAL_SECONDS: int = 3600
+    PATCH_POLL_FAILURE_RETRY_SECONDS: int = 60
 
     ENABLE_PATCH_POLLER: bool = True
 
