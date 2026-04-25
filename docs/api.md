@@ -66,6 +66,23 @@ Notes:
   - `data.env`
   - `meta.dataVersion` set to the current patch when one is registered
 
+#### `GET /v1/bootstrap`
+
+- `200`: success envelope with app startup metadata:
+  - `data.service`
+  - `data.env`
+  - `data.currentPatch`
+  - `data.locale`
+  - `data.ddragon.baseUrl`
+  - `data.ddragon.dataBaseUrl`
+  - `data.ddragon.assetBaseUrl`
+  - `data.ddragon.imageBaseUrl`
+  - `data.assets` readiness map for champions, items, runes, and summoner spells
+  - `data.modes` readiness summary
+  - `data.capabilities` flags for currently available authority domains
+  - `meta.dataVersion` set to the current patch
+- `404`: `NO_CURRENT_PATCH`
+
 ### Patch and Static Data
 
 #### `POST /v1/ddragon/sync`

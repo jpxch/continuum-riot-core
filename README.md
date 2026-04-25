@@ -19,6 +19,7 @@ Implemented today:
   - runes
   - summoner spells
 - Read endpoints:
+  - `GET /v1/bootstrap`
   - `GET /v1/patch`
   - `GET /v1/champions`
   - `GET /v1/items`

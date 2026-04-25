@@ -84,6 +84,7 @@ Implemented APIs:
 
 - `GET /v1/health`
 - `GET /v1/version`
+- `GET /v1/bootstrap`
 - `POST /v1/ddragon/sync`
 - `GET /v1/patch`
 - `GET /v1/champions`
