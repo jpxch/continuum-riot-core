@@ -17,6 +17,22 @@ from app.core.config import settings
 
 router = APIRouter()
 
+@router.get("/champions")
+@contract_response
+async def read_champions(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    try:
+        patch = await get_current_patch(session)
+        data = await load_asset_json(session, AssetType.CHAMPION)
+        return {
+            "__data__": data,
+            "__data_version__": patch,
+        }
+    except RuntimeError as e:
+        raise handle_runtime_error(e)
+
 @router.get("/champions/{champion_id}/lore")
 @contract_response
 async def read_champion_lore(
